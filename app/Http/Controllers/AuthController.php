@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class AuthController extends Controller{
 
     public function login(Request $request)
-    {
+{
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
@@ -28,7 +28,7 @@ class AuthController extends Controller{
         return response()->json([
                 'status' => 'success',
                 'user' => $user,
-                'authorisation' => [
+                'authorization' => [
                     'token' => $token,
                     'type' => 'bearer',
                 ]
@@ -56,15 +56,15 @@ public function register(Request $request){
             'status' => 'success',
             'message' => 'User created successfully',
             'user' => $user,
-            'authorisation' => [
+            'authorization' => [
                 'token' => $token,
                 'type' => 'bearer',
             ]
         ]);
     }
 
-    public function logout()
-    {
+    public function logout(){
+
         Auth::logout();
         return response()->json([
             'status' => 'success',
