@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->integer('reputation')->default(0); //karma points as in reddit
-            $table->string('major');
+            $table->string('major')->default('Undeclared');
             $table->timestamps();
         });
 
