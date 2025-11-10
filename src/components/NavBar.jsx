@@ -8,61 +8,63 @@ import {
   HelpCircle,
   FileText,
   Shield,
-  UserCheck,
+  File,
 } from "lucide-react";
 import "../styles/NavBar.css";
 
 function NavBar() {
   return (
     <div className="navbar">
-      <div className="navbar-logo">
-        <div className="logo-icon">
-          <div className="logo-shape"></div>
-        </div>
-        <span className="logo-text">HUniTalk</span>
-      </div>
-
-      <nav className="navbar-menu">
-        <a href="/home" className="nav-item active">
-          <Home size={20} />
+      <nav className="nav-main">
+        <div className="nav-item active">
+          <Home size={18} />
           <span>Home</span>
-        </a>
-        <a href="/discover" className="nav-item">
-          <Globe size={20} />
+        </div>
+
+        <div className="nav-item">
+          <Globe size={18} />
           <span>Discover</span>
-        </a>
-        <a href="/posts" className="nav-item">
-          <Edit3 size={20} />
+        </div>
+
+        <div className="nav-item">
+          <Edit3 size={18} />
           <span>My Posts</span>
-        </a>
-        <a href="/communities" className="nav-item">
-          <Users size={20} />
+        </div>
+
+        <div className="nav-item">
+          <Users size={18} />
           <span>Communities</span>
-        </a>
-        <a href="/saved" className="nav-item">
-          <Bookmark size={20} />
+        </div>
+
+        <div className="nav-item">
+          <Bookmark size={18} />
           <span>Saved</span>
-        </a>
-        <a href="/ask" className="nav-item">
-          <HelpCircle size={20} />
+        </div>
+
+        <div className="nav-item">
+          <HelpCircle size={18} />
           <span>AskHUni</span>
-        </a>
+        </div>
       </nav>
 
-      <div className="navbar-footer">
-        <a href="/rules" className="nav-item">
-          <FileText size={20} />
+      <div className="nav-divider"></div>
+
+      <nav className="nav-footer">
+        <div className="nav-item">
+          <FileText size={18} />
           <span>HUniTalk Rules</span>
-        </a>
-        <a href="/privacy" className="nav-item">
-          <Shield size={20} />
+        </div>
+
+        <div className="nav-item">
+          <Shield size={18} />
           <span>Privacy Policy</span>
-        </a>
-        <a href="/agreement" className="nav-item">
-          <UserCheck size={20} />
+        </div>
+
+        <div className="nav-item">
+          <File size={18} />
           <span>User Agreement</span>
-        </a>
-      </div>
+        </div>
+      </nav>
     </div>
   );
 }

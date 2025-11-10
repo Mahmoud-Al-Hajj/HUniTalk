@@ -5,38 +5,46 @@ import "../styles/TopBar.css";
 function TopBar() {
   return (
     <div className="topbar">
-      <div className="topbar-brand">
-        <div className="brand-logo">
-          <div className="logo-icon"></div>
+      <div className="topbar-left">
+        <div className="logo-container">
+          <div className="logo-icon">
+            <div className="logo-chat-bubble">
+              <div className="logo-avatar"></div>
+            </div>
+          </div>
+          <span className="logo-text">
+            HU<span className="logo-highlight">ni</span>Talk
+          </span>
         </div>
-        <span className="brand-text">HUniTalk</span>
       </div>
 
-      <div className="search-container">
-        <Search className="search-icon" size={16} />
-        <input
-          type="text"
-          placeholder="Search HUniTalk"
-          className="search-input"
-        />
+      <div className="topbar-center">
+        <div className="search-container">
+          <Search className="search-icon" size={18} />
+          <input
+            type="text"
+            placeholder="Search HUniTalk"
+            className="search-input"
+          />
+        </div>
       </div>
 
-      <div className="topbar-actions">
-        <button className="create-button">
+      <div className="topbar-right">
+        <button className="create-btn">
           <Plus size={16} />
           <span>Create</span>
         </button>
 
         <div className="notification-container">
           <Bell size={20} />
-          <span className="notification-count">5</span>
+          <span className="notification-badge">2</span>
         </div>
 
-        <div className="user-profile">
+        <div className="user-avatar">
           <img
-            src="https://via.placeholder.com/32x32/4a5568/ffffff?text=U"
-            alt="User"
-            className="profile-image"
+            src="/api/placeholder/32/32"
+            alt="User Avatar"
+            className="avatar-image"
           />
         </div>
       </div>
