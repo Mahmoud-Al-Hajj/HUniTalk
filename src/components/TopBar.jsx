@@ -1,54 +1,63 @@
 import React from "react";
-import { Search, Plus, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import "../styles/TopBar.css";
 
-function TopBar() {
-  return (
-    <div className="topbar">
-      <div className="topbar-left">
-        <div className="logo-container">
-          <div className="logo-icon">
-            <div className="logo-chat-bubble">
-              <div className="logo-avatar"></div>
-            </div>
-          </div>
-          <span className="logo-text">
-            HU<span className="logo-highlight">ni</span>Talk
-          </span>
-        </div>
-      </div>
+function TopBar({ onCreatePost }) {
+  const navigate = useNavigate();
 
-      <div className="topbar-center">
+  const handleCreateClick = () => {
+    if (onCreatePost) {
+      onCreatePost();
+    }
+  };
+
+  const handleLogoClick = () => {
+    navigate("/home");
+  };
+
+  return (
+    <header className="topbar">
+      <div className="topbar-content">
+        <div
+          className="topbar-brand"
+          onClick={handleLogoClick}
+          style={{ cursor: "pointer" }}
+        >
+          <div className="logo">HU</div>
+          <span className="brand-name">HUniTalk</span>
+        </div>
+
         <div className="search-container">
-          <Search className="search-icon" size={18} />
           <input
             type="text"
             placeholder="Search HUniTalk"
             className="search-input"
+            aria-label="Search HUniTalk"
           />
         </div>
-      </div>
 
-      <div className="topbar-right">
-        <button className="create-btn">
-          <Plus size={16} />
-          <span>Create</span>
-        </button>
-
-        <div className="notification-container">
-          <Bell size={20} />
-          <span className="notification-badge">2</span>
+        <div className="topbar-actions">
+          <button
+            className="create-button"
+            onClick={handleCreateClick}
+            aria-label="Create new post"
+          >
+            + Create
+          </button>
+          <div className="notification-icon">
+            <span>🔔</span>
+            <span className="notification-badge">3</span>
+          </div>
+          <div
+            className="user-avatar"
+            onClick={() => navigate("/profile")}
+            style={{ cursor: "pointer" }}
+          >
+            U
+          </div>
         </div>
-
-        <div className="user-avatar">
-          <img
-            src="/api/placeholder/32/32"
-            alt="User Avatar"
-            className="avatar-image"
-          />
-        </div>
       </div>
-    </div>
+    </header>
   );
 }
 

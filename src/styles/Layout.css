@@ -1,0 +1,30 @@
+/* Layout Component Styles */
+.app-layout {
+  min-height: 100vh;
+  background-color: var(--page-bg, #1f1f30);
+  color: var(--text-primary, #ffffff);
+}
+
+.main-content {
+  margin-left: var(--navbar-width, 220px);
+  margin-top: var(--topbar-height, 60px);
+  padding: 30px;
+  flex: 1;
+  min-height: calc(100vh - var(--topbar-height, 60px));
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    margin-left: 0;
+    padding: 16px;
+    margin-top: calc(var(--topbar-height, 60px) + 50px);
+  }
+}
