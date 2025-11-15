@@ -1,0 +1,63 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Services\PostService;
+use App\Models\Post;
+use Illuminate\Support\Facades\Auth;
+
+class PostsController extends Controller{
+
+    function createPost(Request $request){
+        $request->validate([
+            'community_id' => 'required|integer|exists:communities,id',
+            'title' => 'required|string|max:255',
+            'body' => 'nullable|string',
+        ]);
+        $post = PostService::createPost($request);
+        return response()->json($post, 200);
+    }
+
+    function getAllPosts(){
+        $posts = PostService::getAllPosts();
+        return response()->json($posts, 200);
+    }
+    function deletePost($id){
+        $message = PostService::DeletePost($id);
+        return response()->json(['message' => $message], 200);
+    }
+    function getPostById($id){
+        $post = PostService::GetPostById($id);
+        return response()->json($post, 200);
+    }
+    function getPostsByUserId($user_id){
+        $posts = PostService::GetPostsByUserId($user_id);
+        return response()->json($posts, 200);
+    }
+    function getPostsByCommunityId($community_id){
+        $posts = PostService::GetPostsByCommunityId($community_id);
+        return response()->json($posts, 200);
+    }
+    function upVotePost($post_id){
+        $user_id = Auth::id();
+        $message = PostService::UpVotePost($post_id, $user_id);
+        return response()->json(['message' => $message], 200);
+    }
+    function downVotePost($post_id){
+        $user_id = Auth::id();
+        $message = PostService::DownVotePost($post_id, $user_id);
+        return response()->json(['message' => $message], 200);
+    }
+    function savePost($post_id){
+        $user_id = Auth::id();
+        $message = PostService::SavePost($post_id, $user_id);
+        return response()->json(['message' => $message], 200);
+    }
+    function unsavePost($post_id){
+        $user_id = Auth::id();
+        $message = PostService::UnsavePost($post_id, $user_id);
+        return response()->json(['message' => $message], 200);
+    }
+
+}
