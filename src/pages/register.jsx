@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
@@ -11,22 +10,61 @@ function Register() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post("http://127.0.0.1:8000/api/register", {
-        name: userName,
-        email: email,
-        password: password,
-      });
+    setErrors({});
 
-      const { token } = response.data;
-      localStorage.setItem("token", token);
-      navigate("/login");
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/register",
+        {
+          name: userName,
+          email: email,
+          password: password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        // Store token if provided (some APIs return token on registration)
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+
+          // Store user data if available
+          if (response.data.user) {
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+          }
+
+          // Navigate directly to home if token is provided
+          window.location.href = "/home";
+        } else {
+          // Navigate to login if no token (user needs to login)
+          window.location.href = "/login";
+        }
+      }
     } catch (error) {
-      setErrors(error.response.data.errors);
+      if (error.response && error.response.data) {
+        setErrors(
+          error.response.data.errors || {
+            register: [
+              error.response.data.message ||
+                "Registration failed. Please try again.",
+            ],
+          }
+        );
+      } else {
+        setErrors({
+          register: [
+            "Unable to connect to the server. Please try again later.",
+          ],
+        });
+      }
     }
   };
   return (
@@ -35,7 +73,7 @@ function Register() {
       <div className="card-container">
         <h1 className="card-title">Create an account</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form>
           {/* Error Messages */}
           {Object.keys(errors).length > 0 && (
             <div className="error-box">
@@ -100,7 +138,7 @@ function Register() {
           </div>
 
           {/* Submit Button */}
-          <button type="submit" className="submit-btn">
+          <button type="button" className="submit-btn" onClick={handleSubmit}>
             Create account
           </button>
 

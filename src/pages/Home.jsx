@@ -1,52 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
+import api from "../api/axios";
 import "../styles/Home.css";
 
-const initialPosts = [
-  {
-    id: 1,
-    title: "Teacher has accused me of using ChatGPT",
-    body: "My teacher has accused me of using ChatGPT on two of my essay's. I did not use it. She emailed me with screenshots showing a software saying it's 60% AI generated and she will be having a conversation with me tommorow. I go to a strict boarding school and they take this stuff really seriously. What can I tell her? Also is there any way to actually prove you used ChatGPT?",
-    community: "Computer Science Community",
-    author: "JimmyOrval",
-    timestamp: "2 days ago",
-    votes: 803,
-    comments: 360,
-  },
-  {
-    id: 2,
-    title: "Best practices for React state management in 2024",
-    body: "I've been working with React for a few years now, and I'm curious what everyone thinks about state management solutions. Are we still using Redux? Has Zustand taken over? What about the new use hook in React 19?",
-    community: "reactjs",
-    author: "devmaster99",
-    timestamp: "5 hours ago",
-    votes: 245,
-    comments: 89,
-  },
-  {
-    id: 3,
-    title: "Just landed my first dev job!",
-    body: "After 8 months of learning and applying, I finally got an offer as a junior frontend developer. The interview process was tough but fair. For those still searching - don't give up!",
-    community: "webdev",
-    author: "codernewbie",
-    timestamp: "1 day ago",
-    votes: 1542,
-    comments: 203,
-  },
-  {
-    id: 4,
-    title: "CSS Grid vs Flexbox - when to use which?",
-    body: "I keep seeing debates about this. Some people swear by Grid for everything, others stick with Flexbox. What's your approach? Do you use both depending on the situation?",
-    community: "css",
-    author: "stylewizard",
-    timestamp: "3 days ago",
-    votes: 421,
-    comments: 156,
-  },
-];
-
 function Home() {
-  const [posts, setPosts] = useState(initialPosts);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPost, setNewPost] = useState({
     title: "",
@@ -55,38 +15,65 @@ function Home() {
   });
   const [userVotes, setUserVotes] = useState({});
 
-  const handleVote = (postId, voteType) => {
-    const currentVote = userVotes[postId];
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
-    setPosts(
-      posts.map((post) => {
-        if (post.id === postId) {
-          let newVotes = post.votes;
-
-          if (currentVote === voteType) {
-            // Unvote
-            newVotes = voteType === "up" ? post.votes - 1 : post.votes + 1;
-          } else if (currentVote) {
-            // Change vote
-            newVotes = voteType === "up" ? post.votes + 2 : post.votes - 2;
-          } else {
-            // New vote
-            newVotes = voteType === "up" ? post.votes + 1 : post.votes - 1;
-          }
-
-          return { ...post, votes: newVotes };
-        }
-        return post;
-      })
-    );
-
-    setUserVotes((prev) => ({
-      ...prev,
-      [postId]: currentVote === voteType ? null : voteType,
-    }));
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/posts");
+      // Assuming response.data is the array of posts or response.data.data
+      setPosts(
+        Array.isArray(response.data) ? response.data : response.data.data || []
+      );
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+      setError("Failed to load posts. Please try again later.");
+      setLoading(false);
+    }
   };
 
-  const handleCreatePost = (e) => {
+  const handleVote = async (postId, voteType) => {
+    // Optimistic update
+    const currentVote = userVotes[postId];
+    const postIndex = posts.findIndex((p) => p.id === postId);
+    if (postIndex === -1) return;
+
+    const originalPost = posts[postIndex];
+    let newVotes = originalPost.votes;
+
+    if (currentVote === voteType) {
+      // Unvote logic would go here if supported, but for now let's just toggle
+      // If already upvoted and clicking upvote again -> usually unvote
+      // But the API routes provided are just /upvote and /downvote
+      // Let's assume we just call the API
+    }
+
+    // For now, let's just call the API and refresh or update state based on response
+    // to avoid complex optimistic logic without knowing backend behavior exactly
+    try {
+      if (voteType === "up") {
+        await api.post(`/posts/${postId}/upvote`);
+      } else {
+        await api.post(`/posts/${postId}/downvote`);
+      }
+
+      // Refresh posts to get updated counts
+      // Or manually update if we knew the calculation
+      fetchPosts();
+
+      setUserVotes((prev) => ({
+        ...prev,
+        [postId]: voteType,
+      }));
+    } catch (err) {
+      console.error("Error voting:", err);
+    }
+  };
+
+  const handleCreatePost = async (e) => {
     e.preventDefault();
 
     if (
@@ -98,20 +85,22 @@ function Home() {
       return;
     }
 
-    const post = {
-      id: Date.now(),
-      title: newPost.title,
-      body: newPost.body,
-      community: newPost.community,
-      author: "You",
-      timestamp: "Just now",
-      votes: 1,
-      comments: 0,
-    };
+    try {
+      const response = await api.post("/posts", {
+        title: newPost.title,
+        body: newPost.body,
+        community_id: 1, // Hardcoded for now as we need community ID, not name.
+        // TODO: We need a dropdown of communities to select from
+      });
 
-    setPosts([post, ...posts]);
-    setNewPost({ title: "", body: "", community: "" });
-    setIsModalOpen(false);
+      setPosts([response.data, ...posts]);
+      setNewPost({ title: "", body: "", community: "" });
+      setIsModalOpen(false);
+      fetchPosts(); // Refresh to be sure
+    } catch (err) {
+      console.error("Error creating post:", err);
+      alert("Failed to create post");
+    }
   };
 
   return (

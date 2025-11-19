@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
@@ -10,24 +9,58 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrors({});
+
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/login", {
-        email,
-        password,
-      });
-      if (response.status === 200) {
-        // Handle successful login
-      }
-    } catch (error) {
-      setErrors(
-        error.response.data.errors || {
-          login: ["Invalid credentials check your email and password."],
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/login",
+        {
+          email,
+          password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
         }
       );
+
+      console.log("Login API Response:", response);
+
+      // Check for token in different common fields (token, access_token)
+      const token = response.data.token || response.data.access_token;
+
+      if ((response.status === 200 || response.status === 201) && token) {
+        localStorage.setItem("token", token);
+
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+
+        console.log("Login successful, navigating to home...");
+        window.location.href = "/home";
+      } else {
+        console.warn("Login response missing token:", response.data);
+      }
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setErrors(
+          error.response.data.errors || {
+            login: [
+              error.response.data.message ||
+                "Invalid credentials. Please check your email and password.",
+            ],
+          }
+        );
+      } else {
+        setErrors({
+          login: ["Unable to connect to the server. Please try again later."],
+        });
+      }
     }
   };
 
@@ -37,7 +70,7 @@ function Login() {
       <div className="card-container">
         <h1 className="card-title"> Welcome Back !</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form>
           {/* Error Messages */}
           {Object.keys(errors).length > 0 && (
             <div className="error-box">
@@ -89,7 +122,7 @@ function Login() {
           </div>
 
           {/* Submit Button */}
-          <button type="submit" className="submit-btn">
+          <button type="button" className="submit-btn" onClick={handleSubmit}>
             Login
           </button>
 

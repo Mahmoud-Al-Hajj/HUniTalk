@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import api from "../api/axios";
 import "../styles/Community.css";
-// import axios from 'axios'; // Uncomment when ready to integrate backend
 
 const Community = () => {
   const { communityId } = useParams();
@@ -39,38 +39,11 @@ const Community = () => {
       setLoading(true);
       setError(null);
 
-      // TODO: Replace with actual API call
-      // const response = await axios.get(`/api/communities/${communityId}`, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // setCommunityData(response.data);
+      const response = await api.get(`/communities/${communityId}`);
+      setCommunityData(response.data);
+      // Assuming response.data includes isJoined or we check separately
       // setIsJoined(response.data.isJoined);
-
-      // Mock data for now
-      setTimeout(() => {
-        setCommunityData({
-          id: communityId,
-          name: "Computer Science Community",
-          description:
-            "A community for computer science students and professionals to discuss algorithms, data structures, programming languages, and career advice.",
-          members: 45230,
-          createdAt: "2023-01-15",
-          banner: null,
-          avatar: "CS",
-          rules: [
-            "Be respectful and professional",
-            "No spam or self-promotion",
-            "Stay on topic",
-            "Use appropriate flair for posts",
-            "Search before posting",
-          ],
-          moderators: ["Prof_Smith", "AdminCS", "ModHelper"],
-        });
-        setIsJoined(false);
-        setLoading(false);
-      }, 800);
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching community data:", err);
       setError("Failed to load community data. Please try again later.");
@@ -83,65 +56,24 @@ const Community = () => {
     try {
       setError(null);
 
-      // TODO: Replace with actual API call
-      // const response = await axios.get(`/api/communities/${communityId}/posts`, {
-      //   params: { sort: sortBy },
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-      // setPosts(response.data);
-
-      // Mock data for now
-      setTimeout(() => {
-        setPosts([
-          {
-            id: 1,
-            title: "Teacher has accused me of using ChatGPT",
-            body: "My teacher has accused me of using ChatGPT on two of my essay's. I did not use it. She emailed me with screenshots showing a software saying it's 60% AI generated and she will be having a conversation with me tommorow.",
-            author: "JimmyOrval",
-            timestamp: "2 days ago",
-            votes: 803,
-            comments: 360,
-            isPinned: true,
-          },
-          {
-            id: 2,
-            title: "Data Structures Final Exam Tips?",
-            body: "Anyone have tips for the upcoming data structures final? What topics should I focus on?",
-            author: "studyhard123",
-            timestamp: "5 hours ago",
-            votes: 45,
-            comments: 23,
-            isPinned: false,
-          },
-          {
-            id: 3,
-            title: "Internship at Google - My Experience",
-            body: "Just finished my summer internship at Google. Happy to answer any questions about the interview process and what it's like working there!",
-            author: "tech_intern",
-            timestamp: "1 day ago",
-            votes: 234,
-            comments: 87,
-            isPinned: false,
-          },
-        ]);
-      }, 500);
+      const response = await api.get(`/posts/community/${communityId}`);
+      setPosts(
+        Array.isArray(response.data) ? response.data : response.data.data || []
+      );
     } catch (err) {
-      console.error("Error fetching posts:", err);
-      setError("Failed to load posts. Please try again later.");
+      console.error("Error fetching community posts:", err);
+      // Don't block the whole page if posts fail, just show empty or error in feed
     }
   };
 
   // Backend Integration - Join/Leave Community
   const handleJoinCommunity = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await axios.post(`/api/communities/${communityId}/join`, {}, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
+      if (isJoined) {
+        await api.post(`/communities/${communityId}/unfollow`);
+      } else {
+        await api.post(`/communities/${communityId}/follow`);
+      }
 
       setIsJoined(!isJoined);
       setCommunityData((prev) => ({
@@ -184,14 +116,11 @@ const Community = () => {
     }));
 
     try {
-      // TODO: Replace with actual API call
-      // await axios.post(`/api/posts/${postId}/vote`, {
-      //   voteType: currentVote === voteType ? 'unvote' : voteType
-      // }, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
+      if (voteType === "up") {
+        await api.post(`/posts/${postId}/upvote`);
+      } else {
+        await api.post(`/posts/${postId}/downvote`);
+      }
     } catch (err) {
       console.error("Error voting:", err);
       // Revert optimistic update on error
@@ -209,29 +138,13 @@ const Community = () => {
     }
 
     try {
-      // TODO: Replace with actual API call
-      // const response = await axios.post(`/api/communities/${communityId}/posts`, {
-      //   title: newPost.title,
-      //   body: newPost.body
-      // }, {
-      //   headers: {
-      //     Authorization: `Bearer ${localStorage.getItem('token')}`
-      //   }
-      // });
-
-      // Mock new post creation
-      const post = {
-        id: posts.length + 1,
+      const response = await api.post("/posts", {
         title: newPost.title,
         body: newPost.body,
-        author: "CurrentUser", // Will come from auth context
-        timestamp: "Just now",
-        votes: 1,
-        comments: 0,
-        isPinned: false,
-      };
+        community_id: communityId,
+      });
 
-      setPosts([post, ...posts]);
+      setPosts([response.data, ...posts]);
       setNewPost({ title: "", body: "" });
       setIsModalOpen(false);
     } catch (err) {
