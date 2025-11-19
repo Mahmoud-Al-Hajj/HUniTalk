@@ -5,24 +5,47 @@ use App\Models\Post;
 use App\Models\Vote;
 use App\Models\SavedPost;
 use App\Models\PostComment;
+use Illuminate\Support\Facades\Auth;
 
 
 class PostService{
 
     public static function createPost($request){
         $post = new Post();
-        $post->user_id = $request->user_id;
-        $post->community_id = $request->community_id;
+        $user_id = Auth::id();
+        $post->user_id = $user_id;
+        $post->communities_id = $request->communities_id;
         $post->title = $request->title;
+        $post->upvotes = 0;
+        $post->downvotes = 0;
         $post->body = $request->body;
         $post->save();
         return $post;
     }
 
-    public static function getAllPosts(){
-        return Post::with(['user','community'])
+    public static function getAllPosts($user_id = null){
+        $posts = Post::with(['user','community'])
+        ->withCount('comments')
         ->orderBy('created_at','desc')
         ->get();
+
+        if ($user_id) {
+            $posts->each(function ($post) use ($user_id) {
+                $post->is_upvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'upvote')
+                    ->exists();
+                $post->is_downvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'downvote')
+                    ->exists();
+                $post->is_saved = SavedPost::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->exists();
+            });
+        }
+
+        return $posts;
     }
 
     public static function DeletePost($id){
@@ -31,20 +54,78 @@ class PostService{
         return "Deleted Successfully";
     }
 
-    public static function GetPostById($id){
-        return Post::with(['user','community'])->findOrFail($id);
+    public static function GetPostById($id, $user_id = null){
+        $post = Post::with(['user','community'])
+        ->withCount('comments')
+        ->findOrFail($id);
+
+        if ($user_id) {
+            $post->is_upvoted = Vote::where('post_id', $post->id)
+                ->where('user_id', $user_id)
+                ->where('type', 'upvote')
+                ->exists();
+            $post->is_downvoted = Vote::where('post_id', $post->id)
+                ->where('user_id', $user_id)
+                ->where('type', 'downvote')
+                ->exists();
+            $post->is_saved = SavedPost::where('post_id', $post->id)
+                ->where('user_id', $user_id)
+                ->exists();
+        }
+
+        return $post;
     }
 
     public static function GetPostsByUserId($user_id){
-        return Post::with(['user','community'])
+        $posts = Post::with(['user','community'])
+        ->withCount('comments')
         ->where('user_id',$user_id)
+        ->orderBy('created_at','desc')
         ->get();
+
+        if ($user_id) {
+            $posts->each(function ($post) use ($user_id) {
+                $post->is_upvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'upvote')
+                    ->exists();
+                $post->is_downvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'downvote')
+                    ->exists();
+                $post->is_saved = SavedPost::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->exists();
+            });
+        }
+
+        return $posts;
     }
 
-    public static function GetPostsByCommunityId($community_id){
-        return Post::with(['user','community'])
-        ->where('community_id',$community_id)
+    public static function GetPostsByCommunityId($community_id, $user_id = null){
+        $posts = Post::with(['user','community'])
+        ->withCount('comments')
+        ->where('communities_id',$community_id)
+        ->orderBy('created_at','desc')
         ->get();
+
+        if ($user_id) {
+            $posts->each(function ($post) use ($user_id) {
+                $post->is_upvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'upvote')
+                    ->exists();
+                $post->is_downvoted = Vote::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->where('type', 'downvote')
+                    ->exists();
+                $post->is_saved = SavedPost::where('post_id', $post->id)
+                    ->where('user_id', $user_id)
+                    ->exists();
+            });
+        }
+
+        return $posts;
     }
 
     public static function UpVotePost($post_id, $user_id){

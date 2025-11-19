@@ -11,16 +11,18 @@ class PostsController extends Controller{
 
     function createPost(Request $request){
         $request->validate([
-            'community_id' => 'required|integer|exists:communities,id',
+            'communities_id' => 'required|integer|exists:communities,id',
             'title' => 'required|string|max:255',
             'body' => 'nullable|string',
         ]);
+        $request->merge(['user_id' => Auth::id()]);
         $post = PostService::createPost($request);
         return response()->json($post, 200);
     }
 
     function getAllPosts(){
-        $posts = PostService::getAllPosts();
+        $user_id = Auth::id();
+        $posts = PostService::getAllPosts($user_id);
         return response()->json($posts, 200);
     }
     function deletePost($id){
@@ -28,15 +30,18 @@ class PostsController extends Controller{
         return response()->json(['message' => $message], 200);
     }
     function getPostById($id){
-        $post = PostService::GetPostById($id);
+        $user_id = Auth::id();
+        $post = PostService::GetPostById($id, $user_id);
         return response()->json($post, 200);
     }
-    function getPostsByUserId($user_id){
+    function getPostsByUserId(){
+        $user_id = Auth::id();
         $posts = PostService::GetPostsByUserId($user_id);
         return response()->json($posts, 200);
     }
     function getPostsByCommunityId($community_id){
-        $posts = PostService::GetPostsByCommunityId($community_id);
+        $user_id = Auth::id();
+        $posts = PostService::GetPostsByCommunityId($community_id, $user_id);
         return response()->json($posts, 200);
     }
     function upVotePost($post_id){

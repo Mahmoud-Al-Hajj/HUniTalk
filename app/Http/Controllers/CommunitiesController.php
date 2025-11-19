@@ -14,11 +14,13 @@ class CommunitiesController extends Controller{
         return response()->json($community, 200);
     }
     function getCommunities(){
-        $communities = CommunitiesService::GetCommunities();
+        $user_id = Auth::id();
+        $communities = CommunitiesService::GetCommunities($user_id);
         return response()->json($communities, 200);
     }
     function getCommunityById($id){
-        $community = CommunitiesService::GetCommunityById($id);
+        $user_id = Auth::id();
+        $community = CommunitiesService::GetCommunityById($id, $user_id);
         return response()->json($community, 200);
     }
     function followCommunity($community_id){
@@ -30,5 +32,9 @@ class CommunitiesController extends Controller{
         $user_id = Auth::id();
         $message = CommunitiesService::UnfollowCommunity($user_id, $community_id);
         return response()->json(['message' => $message], 200);
+    }
+    function getCommunitiesByUserId(){
+        $communities = CommunitiesService::getCommunityByUserId();
+        return response()->json($communities, 200);
     }
 }

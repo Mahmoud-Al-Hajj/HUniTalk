@@ -33,6 +33,7 @@ Route::group(["middleware" => "auth:api"], function () {
 
     //communities
     Route::get('/communities', [CommunitiesController::class, 'getCommunities']);
+    Route::get('/communities/user', [CommunitiesController::class, 'getCommunitiesByUserId']);
     Route::get('/communities/{id}', [CommunitiesController::class, 'getCommunityById']);
     Route::post('/communities/{community_id}/follow', [CommunitiesController::class, 'followCommunity']);
     Route::post('/communities/{community_id}/unfollow', [CommunitiesController::class, 'unfollowCommunity']);
