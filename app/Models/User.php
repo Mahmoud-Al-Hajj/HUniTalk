@@ -52,4 +52,22 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+    public function savedPosts()
+    {
+        return $this->hasMany(SavedPost::class);
+    }
+    public function comments()
+    {
+        return $this->hasMany(PostComment::class);
+    }
+    public function communities()
+    {
+        return $this->belongsToMany(Community::class, 'communities_follows', 'user_id', 'community_id');
+    }
+
 }

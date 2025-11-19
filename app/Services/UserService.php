@@ -3,10 +3,12 @@
 namespace App\Services;
 use App\Models\User;
 use App\Models\PostComment;
+use Illuminate\Support\Facades\Auth;
 
 class UserService{
 
-    public static function GetUserProfile($user_id){
+    public static function GetUserProfile(){
+        $user_id = Auth::id();
     return User::with(['posts','savedPosts'])->findOrFail($user_id);
     }
 

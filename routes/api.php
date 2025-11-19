@@ -38,8 +38,8 @@ Route::group(["middleware" => "auth:api"], function () {
     Route::post('/communities/{community_id}/unfollow', [CommunitiesController::class, 'unfollowCommunity']);
 
     //user
-    Route::get('/user/profile', [UserService::class, 'getProfile']);
-    Route::put('/user/profile', [UserService::class, 'updateProfile']);
+    Route::get('/user/profile', [UserService::class, 'GetUserProfile']);
+    Route::put('/user/profile', [UserService::class, 'UpdateUserProfile']);
     Route::put('/user/reputation', [UserService::class, 'calculateUserReputation']);
 
 

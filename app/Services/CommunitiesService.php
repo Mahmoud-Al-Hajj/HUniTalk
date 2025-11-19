@@ -15,7 +15,7 @@ class CommunitiesService{
     return $community;
     }
     public static function GetCommunities(){
-        return Community::all()->with('posts');
+        return Community::with(['posts', 'followers'])->get();
     }
     public static function GetCommunityById($id){
         return Community::findOrFail($id);
