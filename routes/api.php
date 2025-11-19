@@ -51,5 +51,4 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 //only us devs
-
 Route::post('/communities', [CommunitiesController::class, 'createCommunity']);
