@@ -36,40 +36,47 @@ function Home() {
   };
 
   const handleVote = async (postId, voteType) => {
-    // Optimistic update
     const currentVote = userVotes[postId];
-    const postIndex = posts.findIndex((p) => p.id === postId);
-    if (postIndex === -1) return;
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
 
-    const originalPost = posts[postIndex];
-    let newVotes = originalPost.votes;
+    let newVoteState = voteType;
+    let voteDelta = 0;
 
+    // Calculate vote delta
     if (currentVote === voteType) {
-      // Unvote logic would go here if supported, but for now let's just toggle
-      // If already upvoted and clicking upvote again -> usually unvote
-      // But the API routes provided are just /upvote and /downvote
-      // Let's assume we just call the API
+      // Clicking same button removes vote
+      newVoteState = null;
+      voteDelta = voteType === "up" ? -1 : 1;
+    } else if (currentVote) {
+      // Switching from one to another
+      voteDelta = voteType === "up" ? 2 : -2;
+    } else {
+      // First time voting
+      voteDelta = voteType === "up" ? 1 : -1;
     }
 
-    // For now, let's just call the API and refresh or update state based on response
-    // to avoid complex optimistic logic without knowing backend behavior exactly
+    // Optimistic UI update
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { ...p, votes: (p.votes || 0) + voteDelta }
+        : p
+    ));
+
+    setUserVotes(prev => ({
+      ...prev,
+      [postId]: newVoteState,
+    }));
+
     try {
       if (voteType === "up") {
         await api.post(`/posts/${postId}/upvote`);
       } else {
         await api.post(`/posts/${postId}/downvote`);
       }
-
-      // Refresh posts to get updated counts
-      // Or manually update if we knew the calculation
-      fetchPosts();
-
-      setUserVotes((prev) => ({
-        ...prev,
-        [postId]: voteType,
-      }));
     } catch (err) {
       console.error("Error voting:", err);
+      fetchPosts();
     }
   };
 
