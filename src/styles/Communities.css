@@ -9,6 +9,30 @@
   text-align: left;
 }
 
+.category-chips {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chip-active {
+  background: var(--card-bg);
+  border-color: var(--accent-color);
+}
+
 .communities-title {
   font-size: 32px;
   font-weight: 700;
@@ -25,8 +49,36 @@
 
 .communities-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
+  /* Desktop: 5 columns */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.section {
+  margin-top: 32px;
+}
+
+.section-title {
+  font-size: 20px;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 16px 0 12px;
+}
+
+.show-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.show-more {
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .community-card {
@@ -139,7 +191,7 @@
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
   background-color: rgba(0, 0, 0, 0.1);
@@ -152,15 +204,15 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 2px solid var(--accent-color);
-  background-color: var(--accent-color);
+  border: 2px solid #1e66ff;
+  background-color: #1e66ff; /* Join color - blue */
   color: white;
   white-space: nowrap;
 }
 
 .btn-join:hover {
   background-color: transparent;
-  color: var(--accent-color);
+  color: #1e66ff;
 }
 
 .btn-join.joined {
@@ -258,6 +310,18 @@
   }
 
   .communities-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .communities-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+  .communities-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

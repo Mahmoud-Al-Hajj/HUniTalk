@@ -37,7 +37,7 @@ function Home() {
 
   const handleVote = async (postId, voteType) => {
     const currentVote = userVotes[postId];
-    const post = posts.find(p => p.id === postId);
+    const post = posts.find((p) => p.id === postId);
     if (!post) return;
 
     let newVoteState = voteType;
@@ -57,13 +57,13 @@ function Home() {
     }
 
     // Optimistic UI update
-    setPosts(posts.map(p => 
-      p.id === postId 
-        ? { ...p, votes: (p.votes || 0) + voteDelta }
-        : p
-    ));
+    setPosts(
+      posts.map((p) =>
+        p.id === postId ? { ...p, votes: (p.votes || 0) + voteDelta } : p
+      )
+    );
 
-    setUserVotes(prev => ({
+    setUserVotes((prev) => ({
       ...prev,
       [postId]: newVoteState,
     }));
@@ -164,7 +164,12 @@ function Home() {
 
                 <div className="post-content">
                   <div className="post-meta">
-                    <span className="post-community">{post.community}</span>
+                    <span className="post-community">
+                      {typeof post.community === "object" &&
+                      post.community !== null
+                        ? post.community.name
+                        : post.community_name || post.community}
+                    </span>
                     <span className="post-separator">•</span>
                     <span className="post-author">Posted by {post.author}</span>
                     <span className="post-separator">•</span>

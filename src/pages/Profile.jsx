@@ -139,7 +139,10 @@ function Profile() {
           <div className="post-content">
             <div className="post-header">
               <span className="post-community">
-                c/{post.community_name || post.community_id}
+                c/
+                {post.community_name ||
+                  post.community_id ||
+                  post.community?.name}
               </span>
               <span className="post-separator">•</span>
               <span className="post-date">

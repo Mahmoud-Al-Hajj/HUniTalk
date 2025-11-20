@@ -8,6 +8,7 @@ function Communities() {
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,7 +23,6 @@ function Communities() {
         ? response.data
         : response.data.data || [];
 
-      // Map to ensure consistent field names - backend uses is_following and followers_count
       const normalizedCommunities = communitiesData.map((c) => ({
         ...c,
         is_joined: c.is_following || c.is_followed || c.is_joined || false,
@@ -32,8 +32,18 @@ function Communities() {
       setCommunities(normalizedCommunities);
       setLoading(false);
     } catch (err) {
+      // Verbose logging for debugging
       console.error("Error fetching communities:", err);
-      setError("Failed to load communities.");
+      console.error("Error response:", err.response || err);
+      // Save details for optional debug UI
+      setErrorDetails(err.response?.data || err.message || err);
+
+      setError(
+        (err.response &&
+          (err.response.data?.message ||
+            `Server error (${err.response.status})`)) ||
+          "Failed to load communities."
+      );
       setLoading(false);
     }
   };
@@ -82,11 +92,26 @@ function Communities() {
     return (
       <Layout>
         <div className="error-container">
-          <h2>⚠️ Error</h2>
+          <h2>Error</h2>
           <p>{error}</p>
           <button onClick={fetchCommunities} className="retry-btn">
             Retry
           </button>
+          {/* Show debug details only when available and in development mode */}
+          {errorDetails && (
+            <details
+              style={{
+                marginTop: 12,
+                textAlign: "left",
+                color: "var(--text-secondary)",
+              }}
+            >
+              <summary>Debug response</summary>
+              <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+                {JSON.stringify(errorDetails, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       </Layout>
     );
@@ -100,6 +125,8 @@ function Communities() {
             Find and join communities that interest you.
           </p>
         </div>
+
+        {/* Categories removed per request */}
 
         <div className="communities-grid">
           {communities.map((community) => (

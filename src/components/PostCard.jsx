@@ -20,14 +20,19 @@ function PostCard({ post }) {
     isJoined = false,
   } = post;
 
+  const communityName =
+    typeof community === "object" && community !== null
+      ? community.name
+      : community;
+
   return (
     <div className="post-card">
       <div className="post-header">
         <div className="community-info">
           <div className="community-avatar">
-            <img src="/api/placeholder/24/24" alt={community} />
+            <img src="/api/placeholder/24/24" alt={communityName} />
           </div>
-          <span className="community-name">{community}</span>
+          <span className="community-name">{communityName}</span>
           <span className="post-meta">
             • Posted by {author} • {timeAgo}
           </span>

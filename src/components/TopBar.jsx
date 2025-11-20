@@ -37,13 +37,6 @@ function TopBar({ onCreatePost }) {
         </div>
 
         <div className="topbar-actions">
-          <button
-            className="create-button"
-            onClick={handleCreateClick}
-            aria-label="Create new post"
-          >
-            + Create
-          </button>
           <div className="notification-icon">
             <span>🔔</span>
             <span className="notification-badge">3</span>
