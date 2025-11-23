@@ -46,7 +46,8 @@ Route::group(["middleware" => "auth:api"], function () {
 
 
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/ai/ask', [AiController::class, 'ask']);
+    Route::post('/ai/ask', [AiController::class, 'message']);
+
 });
 
 

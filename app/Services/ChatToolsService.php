@@ -32,7 +32,7 @@ class ChatToolsService{
   public function getPostThread(int $postId, int $limitComments = 20): ?array
   {
         $post = Post::with(['comments' => function ($q) use ($limitComments) {
-            $q->orderByDesc('votes')->take($limitComments);
+            $q->orderByDesc('upvotes')->take($limitComments);
         }])->find($postId);
 
         if (! $post) {
