@@ -20,9 +20,10 @@ class PostsController extends Controller{
         return response()->json($post, 200);
     }
 
-    function getAllPosts(){
+    function getAllPosts(Request $request){
         $user_id = Auth::id();
-        $posts = PostService::getAllPosts($user_id);
+        $perPage = $request->query('per_page', 10);
+        $posts = PostService::getAllPosts($user_id, $perPage);
         return response()->json($posts, 200);
     }
     function deletePost($id){
@@ -46,13 +47,13 @@ class PostsController extends Controller{
     }
     function upVotePost($post_id){
         $user_id = Auth::id();
-        $message = PostService::UpVotePost($post_id, $user_id);
-        return response()->json(['message' => $message], 200);
+        $result = PostService::UpVotePost($post_id, $user_id);
+        return response()->json($result, 200);
     }
     function downVotePost($post_id){
         $user_id = Auth::id();
-        $message = PostService::DownVotePost($post_id, $user_id);
-        return response()->json(['message' => $message], 200);
+        $result = PostService::DownVotePost($post_id, $user_id);
+        return response()->json($result, 200);
     }
     function savePost($post_id){
         $user_id = Auth::id();

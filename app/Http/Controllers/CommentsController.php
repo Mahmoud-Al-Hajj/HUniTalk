@@ -14,10 +14,9 @@ class CommentsController extends Controller{
             'post_id' => 'required|integer|exists:posts,id',
             'body' => 'required|string',
         ]);
-        $user_id = Auth::id();
         $post_id = $request->post_id;
         $body = $request->body;
-        $comment = PostService::AddComment($user_id, $post_id, $body);
+        $comment = PostService::AddComment($post_id, $body);
         return response()->json($comment, 200);
     }
     function getCommentsByPostId($post_id){
@@ -30,12 +29,12 @@ class CommentsController extends Controller{
     }
     function upVoteComment($comment_id){
         $user_id = Auth::id();
-        $message = PostService::UpVoteComment($comment_id, $user_id);
-        return response()->json(['message' => $message], 200);
+        $result = PostService::UpVoteComment($comment_id, $user_id);
+        return response()->json($result, 200);
     }
     function downVoteComment($comment_id){
         $user_id = Auth::id();
-        $message = PostService::DownVoteComment($comment_id, $user_id);
-        return response()->json(['message' => $message], 200);
+        $result = PostService::DownVoteComment($comment_id, $user_id);
+        return response()->json($result, 200);
     }
 }

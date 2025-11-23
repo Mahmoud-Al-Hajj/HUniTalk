@@ -16,7 +16,8 @@ class CommunitiesService{
     return $community;
     }
     public static function GetCommunities($user_id = null){
-        $communities = Community::with(['posts', 'followers'])->get();
+        // eager-load posts and their votes, plus followers
+        $communities = Community::with(['posts.votes', 'followers'])->get();
 
         if ($user_id) {
             $communities->each(function ($community) use ($user_id) {
