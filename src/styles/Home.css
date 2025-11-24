@@ -1056,3 +1056,25 @@ body {
     max-width: 100%;
   }
 }
+.verification-success {
+  position: absolute; /* make it float over content */
+  bottom: 20px; /* distance from bottom of the sidebar */
+  right: 20px; /* distance from right of the sidebar */
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  max-width: 250px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 1;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.verification-success.hide {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none; /* avoid clicking invisible box */
+}

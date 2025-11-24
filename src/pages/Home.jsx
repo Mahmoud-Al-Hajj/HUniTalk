@@ -10,13 +10,54 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [newPost, setNewPost] = useState({
     title: "",
     body: "",
     community: "",
   });
+  const [message, setMessage] = useState(""); // NEW: success message
 
   const { userVotes, handleVote, initializeVotes } = useVoting(posts, "post");
+
+  // Load saved posts from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("savedPosts");
+    if (saved) setSavedPosts(JSON.parse(saved));
+  }, []);
+
+  // Save to localStorage whenever savedPosts changes
+  useEffect(() => {
+    localStorage.setItem("savedPosts", JSON.stringify(savedPosts));
+  }, [savedPosts]);
+
+  // NEW: Check query param for email verification
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified")) {
+      setMessage("Your email has been successfully verified!");
+
+      // Remove the query param
+      const url = new URL(window.location);
+      url.searchParams.delete("verified");
+      window.history.replaceState({}, document.title, url.toString());
+
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => setMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleSavePost = (post) => {
+    setSavedPosts((prev) => {
+      const isAlreadySaved = prev.some((p) => p.id === post.id);
+      return isAlreadySaved
+        ? prev.filter((p) => p.id !== post.id)
+        : [...prev, post];
+    });
+  };
+
+  const isPostSaved = (postId) => savedPosts.some((p) => p.id === postId);
 
   const onVote = async (postId, voteType) => {
     try {
@@ -32,7 +73,7 @@ function Home() {
           )
         );
       });
-    } catch (err) {
+    } catch {
       alert("Failed to update vote. Please try again.");
     }
   };
@@ -46,14 +87,11 @@ function Home() {
       setLoading(true);
       setError(null);
       const response = await api.get("/posts");
-      // Handle different response structures
       const postsData = Array.isArray(response.data)
         ? response.data
         : response.data?.data || response.data?.posts || [];
 
-      // Normalize post data - remove nested objects that could cause rendering errors
       const normalizedPosts = postsData.map((post) => {
-        // Calculate vote count from upvotes/downvotes or use existing count
         let voteCount = 0;
         if (post.upvotes !== undefined && post.downvotes !== undefined) {
           voteCount = post.upvotes - post.downvotes;
@@ -62,28 +100,21 @@ function Home() {
         } else if (post.votes_count !== undefined) {
           voteCount = post.votes_count;
         } else if (Array.isArray(post.votes)) {
-          // If votes is an array, calculate from upvotes/downvotes
           voteCount = (post.upvotes || 0) - (post.downvotes || 0);
         }
 
-        // Extract author name safely
         let authorName = "Anonymous";
-        if (typeof post.author === "string") {
-          authorName = post.author;
-        } else if (typeof post.user === "object" && post.user !== null) {
+        if (typeof post.author === "string") authorName = post.author;
+        else if (post.user)
           authorName = post.user.name || post.user.username || "Anonymous";
-        } else if (typeof post.author === "object" && post.author !== null) {
+        else if (post.author)
           authorName = post.author.name || post.author.username || "Anonymous";
-        }
 
         let communityName = "";
-        if (typeof post.community === "object" && post.community !== null) {
-          communityName = post.community.name || "";
-        } else if (typeof post.community === "string") {
+        if (post.community?.name) communityName = post.community.name;
+        else if (typeof post.community === "string")
           communityName = post.community;
-        } else {
-          communityName = post.community_name || "";
-        }
+        else communityName = post.community_name || "";
 
         return {
           id: post.id,
@@ -91,31 +122,25 @@ function Home() {
           body: post.body || post.content || "",
           votes: voteCount,
           comments: post.comments_count || post.comments || 0,
-          user_vote: post.user_vote, // Keep as is (number: 1, -1, or null)
+          user_vote: post.user_vote,
           author: authorName,
           community_name: communityName,
           created_at: post.created_at || post.timestamp || null,
-          // Don't include the votes array or other nested objects
         };
       });
 
       setPosts(normalizedPosts);
-
       initializeVotes(normalizedPosts);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching posts:", err);
-      setError(
-        err.response?.data?.message ||
-          "Failed to load posts. Please try again later."
-      );
+      setError(err.response?.data?.message || "Failed to load posts.");
       setLoading(false);
     }
   };
 
   const handleCreatePost = async (e) => {
     e.preventDefault();
-
     if (
       !newPost.title.trim() ||
       !newPost.body.trim() ||
@@ -129,16 +154,13 @@ function Home() {
       const response = await api.post("/posts", {
         title: newPost.title,
         body: newPost.body,
-        community_id: 1, // Hardcoded for now as we need community ID, not name.
-        // TODO: We need a dropdown of communities to select from
+        community_id: 1,
       });
-
       setPosts([response.data, ...posts]);
       setNewPost({ title: "", body: "", community: "" });
       setIsModalOpen(false);
-      fetchPosts(); // Refresh to be sure
-    } catch (err) {
-      console.error("Error creating post:", err);
+      fetchPosts();
+    } catch {
       alert("Failed to create post");
     }
   };
@@ -147,7 +169,6 @@ function Home() {
     <Layout onCreatePost={() => setIsModalOpen(true)}>
       <div className="feed-container">
         <div className="posts-section">
-          {/* Page Header */}
           <div className="page-header">
             <h1 className="page-title">Home</h1>
             <div className="page-divider"></div>
@@ -185,13 +206,14 @@ function Home() {
                   post={post}
                   userVote={userVotes[post.id] || null}
                   onVote={onVote}
+                  onSave={handleSavePost}
+                  isSaved={isPostSaved(post.id)}
                   showCommunity={true}
                 />
               ))
             )}
           </div>
         </div>
-
         {/* Guidelines Sidebar */}
         <aside className="guidelines-sidebar">
           <div className="guidelines-card">
@@ -247,7 +269,11 @@ function Home() {
           </div>
         </aside>
       </div>
-
+      {message && (
+        <div className="verification-success" key={message}>
+          {message}
+        </div>
+      )}{" "}
       {/* Create Post Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>

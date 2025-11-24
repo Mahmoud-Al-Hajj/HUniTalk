@@ -4,15 +4,18 @@ import Layout from "../components/Layout";
 import api from "../api/axios";
 import useVoting from "../hooks/useVoting";
 import "../styles/Profile.css";
+import { FaPlus } from "react-icons/fa6";
 
 function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [userPosts, setUserPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
   const [followedCommunities, setFollowedCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("posts");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const { userVotes, handleVote, initializeVotes } = useVoting(
     userPosts,
@@ -40,7 +43,85 @@ function Profile() {
 
   useEffect(() => {
     fetchProfileData();
+    loadSavedPosts();
+    loadAvatarFromStorage();
   }, []);
+
+  const loadSavedPosts = () => {
+    const saved = localStorage.getItem("savedPosts");
+    if (saved) {
+      setSavedPosts(JSON.parse(saved));
+    }
+  };
+
+  const loadAvatarFromStorage = () => {
+    const savedAvatar = localStorage.getItem("userAvatar");
+    if (savedAvatar) {
+      setProfile((prev) => ({
+        ...prev,
+        avatar: savedAvatar,
+      }));
+    }
+  };
+
+  const handleUnsavePost = (postId) => {
+    const saved = localStorage.getItem("savedPosts");
+    if (saved) {
+      const savedArray = JSON.parse(saved);
+      const filtered = savedArray.filter((p) => p.id !== postId);
+      localStorage.setItem("savedPosts", JSON.stringify(filtered));
+      setSavedPosts(filtered);
+    }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+
+    try {
+      setUploadingAvatar(true);
+
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+
+        // Save to localStorage
+        localStorage.setItem("userAvatar", base64String);
+
+        // Update profile state
+        setProfile((prev) => ({
+          ...prev,
+          avatar: base64String,
+        }));
+
+        setUploadingAvatar(false);
+      };
+
+      reader.onerror = () => {
+        alert("Failed to read image file");
+        setUploadingAvatar(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Error uploading avatar:", err);
+      alert("Failed to upload avatar. Please try again.");
+      setUploadingAvatar(false);
+    }
+  };
 
   const fetchProfileData = async () => {
     try {
@@ -58,7 +139,14 @@ function Profile() {
         api.get("/communities/user"),
       ]);
 
-      setProfile(profileRes.data);
+      // Load avatar from localStorage if available
+      const savedAvatar = localStorage.getItem("userAvatar");
+
+      setProfile({
+        ...profileRes.data,
+        avatar: savedAvatar || profileRes.data.avatar,
+      });
+
       const postsData = Array.isArray(postsRes.data)
         ? postsRes.data
         : postsRes.data?.data || [];
@@ -142,6 +230,79 @@ function Profile() {
   };
 
   const renderContent = () => {
+    if (activeTab === "saved") {
+      if (savedPosts.length === 0) {
+        return (
+          <div className="empty-state">
+            <div className="empty-icon">🔖</div>
+            <h3 className="empty-title">No saved posts yet</h3>
+            <p className="empty-description">Save posts to view them later</p>
+            <button className="primary-btn" onClick={() => navigate("/home")}>
+              Browse Posts
+            </button>
+          </div>
+        );
+      }
+
+      return savedPosts.map((post) => (
+        <div key={post.id} className="post-card">
+          <div className="post-votes">
+            <button className="vote-btn">▲</button>
+            <span className="vote-count">{post.votes || 0}</span>
+            <button className="vote-btn">▼</button>
+          </div>
+          <div className="post-content">
+            <div className="post-header">
+              <span className="post-community">
+                c/
+                {post.community_name ||
+                  (typeof post.community === "object" && post.community !== null
+                    ? post.community.name
+                    : post.community) ||
+                  "unknown"}
+              </span>
+              <span className="post-separator">•</span>
+              <span className="post-date">
+                {post.created_at
+                  ? new Date(post.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "Recently"}
+              </span>
+            </div>
+            <h3
+              className="post-title"
+              onClick={() => navigate(`/post/${post.id}`)}
+            >
+              {post.title}
+            </h3>
+            <p className="post-body">{post.body}</p>
+            <div className="post-footer">
+              <button className="post-stat">
+                <span>💬</span>
+                <span>{post.comments || 0}</span>
+              </button>
+              <button className="post-stat">
+                <span>↗</span>
+                <span>Share</span>
+              </button>
+              <button
+                className="post-stat unsave-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnsavePost(post.id);
+                }}
+              >
+                <span>❌</span>
+                <span>Unsave</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ));
+    }
+
     if (activeTab === "posts") {
       if (userPosts.length === 0) {
         return (
@@ -259,16 +420,34 @@ function Profile() {
         <div className="profile-container">
           {/* Profile Header */}
           <div className="profile-header">
-            <div className="profile-avatar">
-              {profile.avatar ? (
-                <img src={profile.avatar} alt={profile.name} />
-              ) : (
-                <div className="avatar-placeholder">
-                  {typeof profile.name === "string"
-                    ? profile.name.charAt(0).toUpperCase()
-                    : "U"}
-                </div>
-              )}
+            <div className="profile-avatar-container">
+              <div className="profile-avatar">
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt={profile.name} />
+                ) : (
+                  <div className="avatar-placeholder">
+                    {typeof profile.name === "string"
+                      ? profile.name.charAt(0).toUpperCase()
+                      : "U"}
+                  </div>
+                )}
+              </div>
+              <label className="avatar-upload-btn" htmlFor="avatar-upload">
+                {uploadingAvatar ? (
+                  <span className="upload-spinner">⏳</span>
+                ) : (
+                  <span className="camera">
+                    <FaPlus />
+                  </span>
+                )}
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                style={{ display: "none" }}
+              />
             </div>
             <h1 className="profile-name">
               {typeof profile.name === "string" ? profile.name : "User"}

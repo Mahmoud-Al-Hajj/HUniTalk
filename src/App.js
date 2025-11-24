@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 import CommentsPage from "./pages/CommentsPage";
 import Chatbot from "./pages/Chatbot";
+import VerifyEmail from "./pages/VerifyEmail";
 import "./App.css";
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
             </PublicRoute>
           }
         />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Protected Routes - Only accessible when logged in */}
         <Route

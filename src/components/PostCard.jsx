@@ -8,6 +8,8 @@ function PostCard({
   onVote,
   onClick,
   showCommunity = true,
+  onSave,
+  isSaved = false,
 }) {
   const navigate = useNavigate();
 
@@ -64,6 +66,13 @@ function PostCard({
       onClick(normalizedPost.id);
     } else {
       navigate(`/post/${normalizedPost.id}`);
+    }
+  };
+
+  const handleSaveClick = (e) => {
+    e.stopPropagation();
+    if (onSave) {
+      onSave(post);
     }
   };
 
@@ -158,11 +167,11 @@ function PostCard({
             🔗 Share
           </button>
           <button
-            className="action-button"
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Save post"
+            className={`action-button ${isSaved ? "saved" : ""}`}
+            onClick={handleSaveClick}
+            aria-label={isSaved ? "Unsave post" : "Save post"}
           >
-            🔖 Save
+            {isSaved ? "✅" : "🔖"} {isSaved ? "Saved" : "Save"}
           </button>
         </div>
       </div>

@@ -5,7 +5,6 @@
   left: 0;
   right: 0;
   height: var(--topbar-height, 60px);
-
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
     0 0 40px rgba(255, 138, 0, 0.1) inset;
   overflow: hidden;
@@ -32,9 +31,6 @@
 }
 
 .Navlogout {
-  position: absolute;
-  right: 60px;
-  top: 15px;
   background-color: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-primary, #ffffff);
@@ -53,6 +49,7 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 68, 68, 0.2);
 }
+
 @keyframes topbarGradientFlow {
   0%,
   100% {
@@ -137,7 +134,7 @@
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
 .create-button {
@@ -259,31 +256,6 @@
   color: #d7dadc;
   cursor: pointer;
   padding: 4px;
-}
-
-.notification-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background-color: #ff4500;
-  color: white;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: bold;
-  min-width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
-  cursor: pointer;
 }
 
 .avatar-image {

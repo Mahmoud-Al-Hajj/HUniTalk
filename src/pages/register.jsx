@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
@@ -54,8 +55,14 @@ function Register() {
           localStorage.setItem("user", JSON.stringify(userData));
         }
 
-        // Navigate to home after successful registration
-        window.location.href = "/home";
+        // Use SPA navigation; Navigate to Verify Email page
+        if (user.email_verified) {
+          // If email already verified, go to home
+          window.location.href = "/home";
+        } else {
+          // If not verified, go to verify email page
+          window.location.href = "/verify-email";
+        }
       }
     } catch (error) {
       if (error.response && error.response.data) {
