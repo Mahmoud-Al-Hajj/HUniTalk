@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import api from "../api/axios";
+import useVoting from "../hooks/useVoting";
 import "../styles/Profile.css";
 
 function Profile() {
@@ -12,7 +13,30 @@ function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("posts");
-  const [userVotes, setUserVotes] = useState({});
+
+  const { userVotes, handleVote, initializeVotes } = useVoting(
+    userPosts,
+    "post"
+  );
+
+  const onVote = async (postId, voteType) => {
+    try {
+      await handleVote(postId, voteType, (id, delta, isAbsolute) => {
+        setUserPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === id
+              ? {
+                  ...post,
+                  votes: isAbsolute ? delta : (post.votes || 0) + delta,
+                }
+              : post
+          )
+        );
+      });
+    } catch (err) {
+      alert("Failed to update vote. Please try again.");
+    }
+  };
 
   useEffect(() => {
     fetchProfileData();
@@ -38,16 +62,71 @@ function Profile() {
       const postsData = Array.isArray(postsRes.data)
         ? postsRes.data
         : postsRes.data?.data || [];
-      setUserPosts(postsData);
 
-      // Initialize userVotes from backend data
-      const votes = {};
-      postsData.forEach((post) => {
-        if (post.user_vote) {
-          votes[post.id] = post.user_vote;
+      // Normalize post data - remove nested objects that could cause rendering errors
+      const normalizedPosts = postsData.map((post) => {
+        // Calculate vote count from upvotes/downvotes or use existing count
+        let voteCount = 0;
+        if (post.upvotes !== undefined && post.downvotes !== undefined) {
+          voteCount = post.upvotes - post.downvotes;
+        } else if (typeof post.votes === "number") {
+          voteCount = post.votes;
+        } else if (post.votes_count !== undefined) {
+          voteCount = post.votes_count;
         }
+
+        // Extract author name safely
+        let authorName = "Anonymous";
+        if (typeof post.author === "string") {
+          authorName = post.author;
+        } else if (typeof post.user === "object" && post.user !== null) {
+          authorName = post.user.name || post.user.username || "Anonymous";
+        } else if (typeof post.author === "object" && post.author !== null) {
+          authorName = post.author.name || post.author.username || "Anonymous";
+        }
+
+        // Extract community name safely
+        let communityName = "";
+        if (typeof post.community === "object" && post.community !== null) {
+          communityName = post.community.name || "";
+        } else if (typeof post.community === "string") {
+          communityName = post.community;
+        } else {
+          communityName = post.community_name || "";
+        }
+
+        // Normalize user_vote to prevent object rendering
+        let normalizedUserVote = null;
+        if (typeof post.user_vote === "object" && post.user_vote !== null) {
+          if (post.user_vote.type === "upvote") {
+            normalizedUserVote = 1;
+          } else if (post.user_vote.type === "downvote") {
+            normalizedUserVote = -1;
+          }
+        } else if (typeof post.user_vote === "number") {
+          normalizedUserVote = post.user_vote;
+        } else if (typeof post.user_vote === "string") {
+          normalizedUserVote = parseInt(post.user_vote, 10) || null;
+        }
+
+        // Return clean post object without nested arrays/objects
+        return {
+          id: post.id,
+          title: post.title || "",
+          body: post.body || post.content || "",
+          votes: voteCount,
+          comments: post.comments_count || post.comments || 0,
+          user_vote: normalizedUserVote, // Keep as number: 1, -1, or null
+          author: authorName,
+          community_name: communityName,
+          created_at: post.created_at || post.timestamp || null,
+          // Don't include the votes array or other nested objects
+        };
       });
-      setUserVotes(votes);
+
+      setUserPosts(normalizedPosts);
+
+      initializeVotes(normalizedPosts);
 
       setFollowedCommunities(
         Array.isArray(communitiesRes.data)
@@ -59,39 +138,6 @@ function Profile() {
       console.error("Error fetching profile:", err);
       setError("Failed to load profile.");
       setLoading(false);
-    }
-  };
-
-  const handleVote = async (postId, voteType) => {
-    const currentVote = userVotes[postId];
-    let voteDelta = 0;
-
-    if (currentVote === voteType) {
-      voteDelta = voteType === "up" ? -1 : 1;
-    } else if (currentVote) {
-      voteDelta = voteType === "up" ? 2 : -2;
-    } else {
-      voteDelta = voteType === "up" ? 1 : -1;
-    }
-
-    setUserPosts((posts) =>
-      posts.map((p) =>
-        p.id === postId ? { ...p, votes: (p.votes || 0) + voteDelta } : p
-      )
-    );
-
-    setUserVotes((prev) => ({
-      ...prev,
-      [postId]: currentVote === voteType ? null : voteType,
-    }));
-
-    try {
-      await api.post(
-        `/posts/${postId}/${voteType === "up" ? "upvote" : "downvote"}`
-      );
-    } catch (err) {
-      console.error("Error voting:", err);
-      fetchProfileData();
     }
   };
 
@@ -122,7 +168,7 @@ function Profile() {
               className={`vote-btn ${
                 userVotes[post.id] === "up" ? "active" : ""
               }`}
-              onClick={() => handleVote(post.id, "up")}
+              onClick={() => onVote(post.id, "up")}
             >
               ▲
             </button>
@@ -131,7 +177,7 @@ function Profile() {
               className={`vote-btn ${
                 userVotes[post.id] === "down" ? "active" : ""
               }`}
-              onClick={() => handleVote(post.id, "down")}
+              onClick={() => onVote(post.id, "down")}
             >
               ▼
             </button>
@@ -141,8 +187,11 @@ function Profile() {
               <span className="post-community">
                 c/
                 {post.community_name ||
+                  (typeof post.community === "object" && post.community !== null
+                    ? post.community.name
+                    : post.community) ||
                   post.community_id ||
-                  post.community?.name}
+                  "unknown"}
               </span>
               <span className="post-separator">•</span>
               <span className="post-date">
@@ -185,25 +234,21 @@ function Profile() {
 
   if (loading)
     return (
-      <Layout>
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading profile...</p>
-        </div>
-      </Layout>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading profile...</p>
+      </div>
     );
 
   if (error)
     return (
-      <Layout>
-        <div className="error-container">
-          <h2>⚠️ Error</h2>
-          <p>{error}</p>
-          <button onClick={fetchProfileData} className="retry-btn">
-            Retry
-          </button>
-        </div>
-      </Layout>
+      <div className="error-container">
+        <h2>⚠️ Error</h2>
+        <p>{error}</p>
+        <button onClick={fetchProfileData} className="retry-btn">
+          Retry
+        </button>
+      </div>
     );
 
   if (!profile) return null;
@@ -219,20 +264,31 @@ function Profile() {
                 <img src={profile.avatar} alt={profile.name} />
               ) : (
                 <div className="avatar-placeholder">
-                  {profile.name?.charAt(0).toUpperCase() || "U"}
+                  {typeof profile.name === "string"
+                    ? profile.name.charAt(0).toUpperCase()
+                    : "U"}
                 </div>
               )}
             </div>
-            <h1 className="profile-name">{profile.name}</h1>
+            <h1 className="profile-name">
+              {typeof profile.name === "string" ? profile.name : "User"}
+            </h1>
             <p className="profile-username">
-              @{profile.name?.toLowerCase().replace(/\s+/g, "")}
+              @
+              {typeof profile.name === "string"
+                ? profile.name.toLowerCase().replace(/\s+/g, "")
+                : "user"}
             </p>
           </div>
 
           {/* Profile Stats */}
           <div className="profile-stats">
             <div className="stat-item">
-              <div className="stat-value">{profile.reputation || 0}</div>
+              <div className="stat-value">
+                {typeof profile.reputation === "number"
+                  ? profile.reputation
+                  : 0}
+              </div>
               <div className="stat-label">Karma</div>
             </div>
             <div className="stat-item">
@@ -280,28 +336,39 @@ function Profile() {
                 <div className="sidebar-section">
                   <h3 className="sidebar-title">My Communities</h3>
                   <div className="communities-list">
-                    {followedCommunities.map((community) => (
-                      <button
-                        key={community.id}
-                        className="community-item"
-                        onClick={() => navigate(`/community/${community.id}`)}
-                      >
-                        <div className="community-icon">
-                          {community.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="community-info">
-                          <div className="community-name">
-                            c/{community.name}
+                    {followedCommunities.map((community) => {
+                      // Ensure community name is a string, not an object
+                      const communityName =
+                        typeof community.name === "string"
+                          ? community.name
+                          : typeof community.name === "object" &&
+                            community.name !== null
+                          ? community.name.name || "Unknown"
+                          : "Unknown";
+
+                      return (
+                        <button
+                          key={community.id}
+                          className="community-item"
+                          onClick={() => navigate(`/community/${community.id}`)}
+                        >
+                          <div className="community-icon">
+                            {communityName.charAt(0).toUpperCase()}
                           </div>
-                          <div className="community-members">
-                            {community.followers_count ||
-                              community.members_count ||
-                              0}{" "}
-                            members
+                          <div className="community-info">
+                            <div className="community-name">
+                              c/{communityName}
+                            </div>
+                            <div className="community-members">
+                              {community.followers_count ||
+                                community.members_count ||
+                                0}{" "}
+                              members
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

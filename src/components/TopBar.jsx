@@ -15,6 +15,11 @@ function TopBar({ onCreatePost }) {
     navigate("/home");
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   return (
     <header className="topbar">
       <div className="topbar-content">
@@ -36,11 +41,11 @@ function TopBar({ onCreatePost }) {
           />
         </div>
 
+        <button className="Navlogout" onClick={handleLogout}>
+          logout
+        </button>
+
         <div className="topbar-actions">
-          <div className="notification-icon">
-            <span>🔔</span>
-            <span className="notification-badge">3</span>
-          </div>
           <div
             className="user-avatar"
             onClick={() => navigate("/profile")}

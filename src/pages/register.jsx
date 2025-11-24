@@ -7,6 +7,7 @@ import "../styles/login.css";
 function Register() {
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
+  const [major, setMajor] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -22,6 +23,7 @@ function Register() {
           name: userName,
           email: email,
           password: password,
+          major: major,
         },
         {
           headers: {
@@ -32,21 +34,28 @@ function Register() {
       );
 
       if (response.status === 200 || response.status === 201) {
-        // Store token if provided (some APIs return token on registration)
+        // Store token if provided
         if (response.data.token) {
           localStorage.setItem("token", response.data.token);
-
-          // Store user data if available
-          if (response.data.user) {
-            localStorage.setItem("user", JSON.stringify(response.data.user));
-          }
-
-          // Navigate directly to home if token is provided
-          window.location.href = "/home";
-        } else {
-          // Navigate to login if no token (user needs to login)
-          window.location.href = "/login";
         }
+
+        // Store user data - check different possible response structures
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        } else if (response.data.data && response.data.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.data.user));
+        } else {
+          // If no user data returned, create it from form data
+          const userData = {
+            name: userName,
+            email: email,
+            major: major,
+          };
+          localStorage.setItem("user", JSON.stringify(userData));
+        }
+
+        // Navigate to home after successful registration
+        window.location.href = "/home";
       }
     } catch (error) {
       if (error.response && error.response.data) {
@@ -135,6 +144,17 @@ function Register() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="major">Major</label>
+            <input
+              type="text"
+              id="major"
+              value={major}
+              onChange={(e) => setMajor(e.target.value)}
+              placeholder="Enter your major"
+              required
+            />
           </div>
 
           {/* Submit Button */}

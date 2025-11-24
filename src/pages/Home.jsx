@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
+import PostCard from "../components/PostCard";
 import api from "../api/axios";
+import useVoting from "../hooks/useVoting";
 import "../styles/Home.css";
 
 function Home() {
@@ -13,7 +15,27 @@ function Home() {
     body: "",
     community: "",
   });
-  const [userVotes, setUserVotes] = useState({});
+
+  const { userVotes, handleVote, initializeVotes } = useVoting(posts, "post");
+
+  const onVote = async (postId, voteType) => {
+    try {
+      await handleVote(postId, voteType, (id, delta, isAbsolute) => {
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === id
+              ? {
+                  ...post,
+                  votes: isAbsolute ? delta : (post.votes || 0) + delta,
+                }
+              : post
+          )
+        );
+      });
+    } catch (err) {
+      alert("Failed to update vote. Please try again.");
+    }
+  };
 
   useEffect(() => {
     fetchPosts();
@@ -22,61 +44,72 @@ function Home() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await api.get("/posts");
-      // Assuming response.data is the array of posts or response.data.data
-      setPosts(
-        Array.isArray(response.data) ? response.data : response.data.data || []
-      );
+      // Handle different response structures
+      const postsData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || response.data?.posts || [];
+
+      // Normalize post data - remove nested objects that could cause rendering errors
+      const normalizedPosts = postsData.map((post) => {
+        // Calculate vote count from upvotes/downvotes or use existing count
+        let voteCount = 0;
+        if (post.upvotes !== undefined && post.downvotes !== undefined) {
+          voteCount = post.upvotes - post.downvotes;
+        } else if (typeof post.votes === "number") {
+          voteCount = post.votes;
+        } else if (post.votes_count !== undefined) {
+          voteCount = post.votes_count;
+        } else if (Array.isArray(post.votes)) {
+          // If votes is an array, calculate from upvotes/downvotes
+          voteCount = (post.upvotes || 0) - (post.downvotes || 0);
+        }
+
+        // Extract author name safely
+        let authorName = "Anonymous";
+        if (typeof post.author === "string") {
+          authorName = post.author;
+        } else if (typeof post.user === "object" && post.user !== null) {
+          authorName = post.user.name || post.user.username || "Anonymous";
+        } else if (typeof post.author === "object" && post.author !== null) {
+          authorName = post.author.name || post.author.username || "Anonymous";
+        }
+
+        let communityName = "";
+        if (typeof post.community === "object" && post.community !== null) {
+          communityName = post.community.name || "";
+        } else if (typeof post.community === "string") {
+          communityName = post.community;
+        } else {
+          communityName = post.community_name || "";
+        }
+
+        return {
+          id: post.id,
+          title: post.title || "",
+          body: post.body || post.content || "",
+          votes: voteCount,
+          comments: post.comments_count || post.comments || 0,
+          user_vote: post.user_vote, // Keep as is (number: 1, -1, or null)
+          author: authorName,
+          community_name: communityName,
+          created_at: post.created_at || post.timestamp || null,
+          // Don't include the votes array or other nested objects
+        };
+      });
+
+      setPosts(normalizedPosts);
+
+      initializeVotes(normalizedPosts);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching posts:", err);
-      setError("Failed to load posts. Please try again later.");
+      setError(
+        err.response?.data?.message ||
+          "Failed to load posts. Please try again later."
+      );
       setLoading(false);
-    }
-  };
-
-  const handleVote = async (postId, voteType) => {
-    const currentVote = userVotes[postId];
-    const post = posts.find((p) => p.id === postId);
-    if (!post) return;
-
-    let newVoteState = voteType;
-    let voteDelta = 0;
-
-    // Calculate vote delta
-    if (currentVote === voteType) {
-      // Clicking same button removes vote
-      newVoteState = null;
-      voteDelta = voteType === "up" ? -1 : 1;
-    } else if (currentVote) {
-      // Switching from one to another
-      voteDelta = voteType === "up" ? 2 : -2;
-    } else {
-      // First time voting
-      voteDelta = voteType === "up" ? 1 : -1;
-    }
-
-    // Optimistic UI update
-    setPosts(
-      posts.map((p) =>
-        p.id === postId ? { ...p, votes: (p.votes || 0) + voteDelta } : p
-      )
-    );
-
-    setUserVotes((prev) => ({
-      ...prev,
-      [postId]: newVoteState,
-    }));
-
-    try {
-      if (voteType === "up") {
-        await api.post(`/posts/${postId}/upvote`);
-      } else {
-        await api.post(`/posts/${postId}/downvote`);
-      }
-    } catch (err) {
-      console.error("Error voting:", err);
-      fetchPosts();
     }
   };
 
@@ -120,82 +153,42 @@ function Home() {
             <div className="page-divider"></div>
             <h2 className="page-subtitle">University Q&A Platform</h2>
             <div className="page-features">
-              <span className="feature-item">
-                <span className="feature-icon">👥</span>
-                Connect with classmates
-              </span>
+              <span className="feature-item">Connect with classmates</span>
               <span className="feature-separator">•</span>
-              <span className="feature-item">
-                <span className="feature-icon">📚</span>
-                Share knowledge
-              </span>
+              <span className="feature-item">Share knowledge</span>
               <span className="feature-separator">•</span>
-              <span className="feature-item">
-                <span className="feature-icon">💡</span>
-                Get help
-              </span>
+              <span className="feature-item">Get help</span>
             </div>
           </div>
 
           <div className="posts-feed">
-            {posts.map((post) => (
-              <article key={post.id} className="post-card">
-                <div className="post-votes">
-                  <button
-                    className={`vote-button vote-up ${
-                      userVotes[post.id] === "up" ? "active" : ""
-                    }`}
-                    onClick={() => handleVote(post.id, "up")}
-                    aria-label="Upvote post"
-                  >
-                    ▲
-                  </button>
-                  <span className="vote-count">{post.votes}</span>
-                  <button
-                    className={`vote-button vote-down ${
-                      userVotes[post.id] === "down" ? "active" : ""
-                    }`}
-                    onClick={() => handleVote(post.id, "down")}
-                    aria-label="Downvote post"
-                  >
-                    ▼
-                  </button>
-                </div>
-
-                <div className="post-content">
-                  <div className="post-meta">
-                    <span className="post-community">
-                      {typeof post.community === "object" &&
-                      post.community !== null
-                        ? post.community.name
-                        : post.community_name || post.community}
-                    </span>
-                    <span className="post-separator">•</span>
-                    <span className="post-author">Posted by {post.author}</span>
-                    <span className="post-separator">•</span>
-                    <span className="post-time">{post.timestamp}</span>
-                  </div>
-
-                  <h2 className="post-title">{post.title}</h2>
-                  <p className="post-body">{post.body}</p>
-
-                  <div className="post-actions">
-                    <button
-                      className="action-button"
-                      aria-label={`View ${post.comments} comments`}
-                    >
-                      💬 {post.comments} comments
-                    </button>
-                    <button className="action-button" aria-label="Share post">
-                      🔗 Share
-                    </button>
-                    <button className="action-button" aria-label="Save post">
-                      🔖 Save
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
+            {loading && posts.length === 0 ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading posts...</p>
+              </div>
+            ) : error && posts.length === 0 ? (
+              <div className="error-container">
+                <p>{error}</p>
+                <button onClick={fetchPosts} className="retry-btn">
+                  Retry
+                </button>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="empty-state">
+                <p>No posts yet. Be the first to create one!</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  userVote={userVotes[post.id] || null}
+                  onVote={onVote}
+                  showCommunity={true}
+                />
+              ))
+            )}
           </div>
         </div>
 

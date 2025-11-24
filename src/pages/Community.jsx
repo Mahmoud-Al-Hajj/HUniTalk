@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
+import PostCard from "../components/PostCard";
 import api from "../api/axios";
+import useVoting from "../hooks/useVoting";
 import "../styles/Community.css";
 
 const Community = () => {
@@ -14,12 +16,37 @@ const Community = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isJoined, setIsJoined] = useState(false);
-  const [userVotes, setUserVotes] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPost, setNewPost] = useState({
     title: "",
     body: "",
   });
+
+  const { userVotes, handleVote, initializeVotes } = useVoting(
+    posts,
+    "post",
+    "communityPostVotes"
+  );
+
+  const onVote = async (postId, voteType) => {
+    try {
+      await handleVote(postId, voteType, (id, delta, isAbsolute) => {
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === id
+              ? {
+                  ...post,
+                  votes: isAbsolute ? delta : (post.votes || 0) + delta,
+                }
+              : post
+          )
+        );
+      });
+    } catch (err) {
+      console.error("Vote failed:", err);
+      alert("Failed to update vote. Please try again.");
+    }
+  };
 
   useEffect(() => {
     fetchCommunityData();
@@ -62,11 +89,65 @@ const Community = () => {
       setError(null);
 
       const response = await api.get(`/posts/community/${communityId}`);
-      setPosts(
-        Array.isArray(response.data) ? response.data : response.data.data || []
-      );
+      const postsData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || response.data?.posts || [];
+
+      // Normalize post data - remove nested objects that could cause rendering errors
+      const normalizedPosts = postsData.map((post) => {
+        // Calculate vote count from upvotes/downvotes or use existing count
+        let voteCount = 0;
+        if (post.upvotes !== undefined && post.downvotes !== undefined) {
+          voteCount = post.upvotes - post.downvotes;
+        } else if (typeof post.votes === "number") {
+          voteCount = post.votes;
+        } else if (post.votes_count !== undefined) {
+          voteCount = post.votes_count;
+        } else if (Array.isArray(post.votes)) {
+          // If votes is an array, calculate from upvotes/downvotes
+          voteCount = (post.upvotes || 0) - (post.downvotes || 0);
+        }
+
+        // Extract author name safely
+        let authorName = "Anonymous";
+        if (typeof post.author === "string") {
+          authorName = post.author;
+        } else if (typeof post.user === "object" && post.user !== null) {
+          authorName = post.user.name || post.user.username || "Anonymous";
+        } else if (typeof post.author === "object" && post.author !== null) {
+          authorName = post.author.name || post.author.username || "Anonymous";
+        }
+
+        // Extract community name safely
+        let communityName = "";
+        if (typeof post.community === "object" && post.community !== null) {
+          communityName = post.community.name || "";
+        } else if (typeof post.community === "string") {
+          communityName = post.community;
+        } else {
+          communityName = post.community_name || "";
+        }
+
+        // Return clean post object without nested arrays/objects
+        return {
+          id: post.id,
+          title: post.title || "",
+          body: post.body || post.content || "",
+          votes: voteCount,
+          comments: post.comments_count || post.comments || 0,
+          user_vote: post.user_vote, // Keep as is (number: 1, -1, or null)
+          author: authorName,
+          community_name: communityName,
+          created_at: post.created_at || post.timestamp || null,
+          // Don't include the votes array or other nested objects
+        };
+      });
+
+      setPosts(normalizedPosts);
+      initializeVotes(normalizedPosts);
     } catch (err) {
       console.error("Error fetching community posts:", err);
+      setError("Failed to load posts. Please try again later.");
       // Don't block the whole page if posts fail, just show empty or error in feed
     }
   };
@@ -104,53 +185,6 @@ const Community = () => {
     }
   };
 
-  // Backend Integration - Vote on Post
-  const handleVote = async (postId, voteType) => {
-    const currentVote = userVotes[postId];
-    const post = posts.find((p) => p.id === postId);
-    if (!post) return;
-
-    let newVoteState = voteType;
-    let voteDelta = 0;
-
-    // Calculate vote delta
-    if (currentVote === voteType) {
-      // Clicking same button removes vote
-      newVoteState = null;
-      voteDelta = voteType === "up" ? -1 : 1;
-    } else if (currentVote) {
-      // Switching from one to another
-      voteDelta = voteType === "up" ? 2 : -2;
-    } else {
-      // First time voting
-      voteDelta = voteType === "up" ? 1 : -1;
-    }
-
-    // Optimistic UI update
-    setPosts(
-      posts.map((p) =>
-        p.id === postId ? { ...p, votes: (p.votes || 0) + voteDelta } : p
-      )
-    );
-
-    setUserVotes((prev) => ({
-      ...prev,
-      [postId]: newVoteState,
-    }));
-
-    try {
-      if (voteType === "up") {
-        await api.post(`/posts/${postId}/upvote`);
-      } else {
-        await api.post(`/posts/${postId}/downvote`);
-      }
-    } catch (err) {
-      console.error("Error voting:", err);
-      fetchCommunityPosts();
-    }
-  };
-
-  // Backend Integration - Create Post
   const handleCreatePost = async (e) => {
     e.preventDefault();
 
@@ -166,7 +200,36 @@ const Community = () => {
         body: newPost.body,
       });
 
-      setPosts([response.data, ...posts]);
+      // Normalize the new post data to match our structure
+      const createdPost = response.data;
+      const normalizedNewPost = {
+        id: createdPost.id,
+        title: createdPost.title || "",
+        body: createdPost.body || "",
+        votes:
+          createdPost.upvotes !== undefined &&
+          createdPost.downvotes !== undefined
+            ? createdPost.upvotes - createdPost.downvotes
+            : typeof createdPost.votes === "number"
+            ? createdPost.votes
+            : createdPost.votes_count || 0,
+        comments: createdPost.comments_count || createdPost.comments || 0,
+        user_vote: createdPost.user_vote || null,
+        author:
+          typeof createdPost.user === "object" && createdPost.user !== null
+            ? createdPost.user.name || createdPost.user.username || "Anonymous"
+            : typeof createdPost.author === "string"
+            ? createdPost.author
+            : "Anonymous",
+        community_name:
+          typeof createdPost.community === "object" &&
+          createdPost.community !== null
+            ? createdPost.community.name
+            : createdPost.community_name || createdPost.community || "",
+        created_at: createdPost.created_at || new Date().toISOString(),
+      };
+
+      setPosts([normalizedNewPost, ...posts]);
       setNewPost({ title: "", body: "" });
       setIsModalOpen(false);
     } catch (err) {
@@ -178,34 +241,30 @@ const Community = () => {
   // Loading state
   if (loading) {
     return (
-      <Layout>
-        <div className="community-loading">
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Loading community...</p>
-          </div>
+      <div className="community-loading">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading community...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <Layout>
-        <div className="community-error">
-          <div className="error-message">
-            <h2>⚠️ Error</h2>
-            <p>{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="retry-button"
-            >
-              Retry
-            </button>
-          </div>
+      <div className="community-error">
+        <div className="error-message">
+          <h2>⚠️ Error</h2>
+          <p>{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="retry-button"
+          >
+            Retry
+          </button>
         </div>
-      </Layout>
+      </div>
     );
   }
 
@@ -265,57 +324,36 @@ const Community = () => {
           <div className="posts-section">
             {/* Posts List */}
             <div className="posts-list">
-              {posts.length === 0 ? (
+              {loading && posts.length === 0 ? (
+                <div className="no-posts">
+                  <div className="spinner"></div>
+                  <p>Loading posts...</p>
+                </div>
+              ) : error && posts.length === 0 ? (
+                <div className="no-posts">
+                  <p>{error}</p>
+                  <button
+                    onClick={fetchCommunityPosts}
+                    className="retry-button"
+                    style={{ marginTop: "12px" }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : posts.length === 0 ? (
                 <div className="no-posts">
                   <p>No posts yet. Be the first to post!</p>
                 </div>
               ) : (
                 posts.map((post) => (
-                  <div key={post.id} className="post-card">
-                    <div className="post-votes">
-                      <button
-                        className={`vote-btn upvote ${
-                          userVotes[post.id] === "up" ? "active" : ""
-                        }`}
-                        onClick={() => handleVote(post.id, "up")}
-                      >
-                        ▲
-                      </button>
-                      <span className="vote-count">
-                        {post.votes || post.votes_count || 0}
-                      </span>
-                      <button
-                        className={`vote-btn downvote ${
-                          userVotes[post.id] === "down" ? "active" : ""
-                        }`}
-                        onClick={() => handleVote(post.id, "down")}
-                      >
-                        ▼
-                      </button>
-                    </div>
-
-                    <div
-                      className="post-content"
-                      onClick={() => navigate(`/post/${post.id}`)}
-                    >
-                      <h3 className="post-title">{post.title}</h3>
-                      <p className="post-body">{post.body}</p>
-                      <div className="post-meta">
-                        <span className="post-author">
-                          Posted by u/
-                          {post.author || post.user?.name || "Anonymous"}
-                        </span>
-                        <span className="post-separator">•</span>
-                        <span className="post-time">
-                          {new Date(post.created_at).toLocaleDateString()}
-                        </span>
-                        <span className="post-separator">•</span>
-                        <span className="post-comments">
-                          💬 {post.comments_count || 0} comments
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    userVote={userVotes[post.id] || null}
+                    onVote={onVote}
+                    onClick={(postId) => navigate(`/post/${postId}`)}
+                    showCommunity={false}
+                  />
                 ))
               )}
             </div>
@@ -326,7 +364,14 @@ const Community = () => {
             <div className="sidebar-card about-card">
               <h3>About Community</h3>
               <p className="community-description">
-                {communityData?.description}
+                {typeof communityData?.description === "string"
+                  ? communityData.description
+                  : typeof communityData?.description === "object" &&
+                    communityData?.description !== null
+                  ? communityData.description.text ||
+                    communityData.description.description ||
+                    ""
+                  : communityData?.description || ""}
               </p>
               <div className="community-stats">
                 <div className="stat-item">
@@ -343,38 +388,12 @@ const Community = () => {
               <div className="created-date">
                 <span>
                   Created{" "}
-                  {new Date(communityData?.created_at).toLocaleDateString()}
+                  {communityData?.created_at
+                    ? new Date(communityData.created_at).toLocaleDateString()
+                    : "N/A"}
                 </span>
               </div>
             </div>
-
-            {communityData?.rules && communityData.rules.length > 0 && (
-              <div className="sidebar-card rules-card">
-                <h3>Community Rules</h3>
-                <ol className="rules-list">
-                  {communityData.rules.map((rule, index) => (
-                    <li key={index} className="rule-item">
-                      {rule}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
-            {communityData?.moderators &&
-              communityData.moderators.length > 0 && (
-                <div className="sidebar-card moderators-card">
-                  <h3>Moderators</h3>
-                  <ul className="moderators-list">
-                    {communityData.moderators.map((mod, index) => (
-                      <li key={index} className="moderator-item">
-                        <span className="mod-icon">👤</span>
-                        <span className="mod-name">u/{mod}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
           </aside>
         </div>
 
@@ -424,11 +443,11 @@ const Community = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="cancel-btn"
+                    className="modal-cancel-btn"
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="submit-btn">
+                  <button type="submit" className="modal-submit-btn">
                     Post
                   </button>
                 </div>

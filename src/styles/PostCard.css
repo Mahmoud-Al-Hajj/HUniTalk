@@ -1,144 +1,140 @@
 .post-card {
-  background-color: #2c2b3d;
-  border: 1px solid #3a3d44;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-
-.post-header {
+  background-color: var(--post-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--border-radius, 8px);
+  padding: 16px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid #3a3d44;
-}
-
-.community-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.community-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.community-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.community-name {
-  font-weight: 600;
-  color: #d7dadc;
-  font-size: 12px;
-}
-
-.post-meta {
-  font-size: 12px;
-  color: #818384;
-}
-
-.join-btn {
-  background-color: #0079d3;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 4px 16px;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
   cursor: pointer;
-  transition: background-color 0.2s;
+  margin-bottom: 16px;
 }
 
-.join-btn:hover {
-  background-color: #005ba1;
+.post-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+  border-color: rgba(255, 138, 0, 0.3);
 }
 
-.post-content {
-  display: flex;
-  padding: 8px;
-}
-
-.post-voting {
+.post-votes {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin-right: 8px;
   min-width: 40px;
 }
 
-.vote-btn {
+.vote-button {
   background: none;
   border: none;
-  color: #818384;
+  color: var(--text-secondary, #a0a0a0);
+  font-size: 20px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 2px;
-  transition: background-color 0.2s, color 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
 }
 
-.vote-btn:hover {
-  background-color: #2c2b3d;
-  color: #d7dadc;
+.vote-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.vote-button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+.vote-up.active {
+  color: var(--upvote-color, #ff8a00);
+}
+
+.vote-down.active {
+  color: var(--downvote-color, #3b82f6);
 }
 
 .vote-count {
-  font-size: 12px;
   font-weight: 600;
-  color: #d7dadc;
+  font-size: 14px;
+  user-select: none;
+  color: var(--text-primary, #ffffff);
 }
 
-.post-body {
+.post-content {
   flex: 1;
-  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #a0a0a0);
+  flex-wrap: wrap;
+}
+
+.post-community {
+  color: var(--text-primary, #ffffff);
+  font-weight: 600;
+}
+
+.post-separator {
+  opacity: 0.5;
+}
+
+.post-author {
+  color: var(--text-secondary, #a0a0a0);
+}
+
+.post-time {
+  color: var(--text-secondary, #a0a0a0);
 }
 
 .post-title {
   font-size: 18px;
-  font-weight: 500;
-  color: #d7dadc;
-  margin: 0 0 8px 0;
-  line-height: 1.3;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary, #ffffff);
+  margin: 0;
 }
 
-.post-text {
+.post-body {
   font-size: 14px;
-  color: #d7dadc;
-  line-height: 1.4;
+  line-height: 1.6;
+  color: var(--text-secondary, #a0a0a0);
   margin: 0;
 }
 
 .post-actions {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 16px;
-  border-top: 1px solid #3a3d44;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.action-btn {
+.action-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #a0a0a0);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: none;
-  color: #818384;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  transition: background-color 0.2s, color 0.2s;
 }
 
-.action-btn:hover {
-  background-color: #2c2b3d;
-  color: #d7dadc;
+.action-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #ffffff);
+}
+
+.action-button:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
 }

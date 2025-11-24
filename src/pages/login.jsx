@@ -39,6 +39,11 @@ function Login() {
 
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
+          localStorage.setItem("username", response.data.user.name);
+          // Save separate user id for legacy checks
+          if (response.data.user.id !== undefined) {
+            localStorage.setItem("user_id", String(response.data.user.id));
+          }
         }
 
         console.log("Login successful, navigating to home...");
@@ -96,6 +101,19 @@ function Login() {
               required
             />
           </div>
+          {/* <div className="form-group">
+  <label htmlFor="email">Email</label>
+  <input
+    type="email"
+    id="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    placeholder="someone@students.haigazian.edu.lb"
+    required
+    pattern="^[A-Za-z0-9._%+-]+@students\.haigazian\.edu\.lb$"
+    title="Email must end with @students.haigazian.edu.lb"
+  />
+</div> */}
 
           {/* Password Field */}
           <div className="form-group">

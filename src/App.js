@@ -8,6 +8,8 @@ import Communities from "./pages/Communities";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import CommentsPage from "./pages/CommentsPage";
+import Chatbot from "./pages/Chatbot";
 import "./App.css";
 
 function App() {
@@ -70,6 +72,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/post/:postId"
+          element={
+            <ProtectedRoute>
+              <CommentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/askhuni"
+          element={
+            <ProtectedRoute>
+              <Chatbot />
             </ProtectedRoute>
           }
         />

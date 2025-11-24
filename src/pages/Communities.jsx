@@ -80,40 +80,36 @@ function Communities() {
 
   if (loading)
     return (
-      <Layout>
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading communities...</p>
-        </div>
-      </Layout>
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading communities...</p>
+      </div>
     );
 
   if (error)
     return (
-      <Layout>
-        <div className="error-container">
-          <h2>Error</h2>
-          <p>{error}</p>
-          <button onClick={fetchCommunities} className="retry-btn">
-            Retry
-          </button>
-          {/* Show debug details only when available and in development mode */}
-          {errorDetails && (
-            <details
-              style={{
-                marginTop: 12,
-                textAlign: "left",
-                color: "var(--text-secondary)",
-              }}
-            >
-              <summary>Debug response</summary>
-              <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
-                {JSON.stringify(errorDetails, null, 2)}
-              </pre>
-            </details>
-          )}
-        </div>
-      </Layout>
+      <div className="error-container">
+        <h2>Error</h2>
+        <p>{error}</p>
+        <button onClick={fetchCommunities} className="retry-btn">
+          Retry
+        </button>
+        {/* Show debug details only when available and in development mode */}
+        {errorDetails && (
+          <details
+            style={{
+              marginTop: 12,
+              textAlign: "left",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <summary>Debug response</summary>
+            <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+              {JSON.stringify(errorDetails, null, 2)}
+            </pre>
+          </details>
+        )}
+      </div>
     );
 
   return (
@@ -129,49 +125,59 @@ function Communities() {
         {/* Categories removed per request */}
 
         <div className="communities-grid">
-          {communities.map((community) => (
-            <div key={community.id} className="community-card">
-              <div className="community-card-banner"></div>
-              <div className="community-card-header">
-                <div className="community-card-avatar">
-                  {community.avatar ? (
-                    <img src={community.avatar} alt={community.name} />
-                  ) : (
-                    <span>{community.name.charAt(0).toUpperCase()}</span>
-                  )}
+          {communities.length === 0 ? (
+            <div className="empty-state" style={{ gridColumn: "1 / -1" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "16px" }}>
+                No communities found. Check back later!
+              </p>
+            </div>
+          ) : (
+            communities.map((community) => (
+              <div key={community.id} className="community-card">
+                <div className="community-card-banner"></div>
+                <div className="community-card-header">
+                  <div className="community-card-avatar">
+                    {community.avatar ? (
+                      <img src={community.avatar} alt={community.name} />
+                    ) : (
+                      <span>{community.name.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="community-card-info">
+                  <Link
+                    to={`/community/${community.id}`}
+                    className="community-card-name"
+                  >
+                    c/{community.name}
+                  </Link>
+                  <p className="community-card-members">
+                    {community.members_count || 0} members
+                  </p>
+                  <p className="community-card-description">
+                    {community.description || "No description available."}
+                  </p>
+                </div>
+
+                <div className="community-card-actions">
+                  <button
+                    className={`btn-join ${
+                      community.is_joined ? "joined" : ""
+                    }`}
+                    onClick={() =>
+                      handleJoinToggle(community.id, community.is_joined)
+                    }
+                  >
+                    {community.is_joined ? "Joined" : "Join"}
+                  </button>
+                  <Link to={`/community/${community.id}`} className="btn-visit">
+                    Visit
+                  </Link>
                 </div>
               </div>
-
-              <div className="community-card-info">
-                <Link
-                  to={`/community/${community.id}`}
-                  className="community-card-name"
-                >
-                  c/{community.name}
-                </Link>
-                <p className="community-card-members">
-                  {community.members_count || 0} members
-                </p>
-                <p className="community-card-description">
-                  {community.description || "No description available."}
-                </p>
-              </div>
-
-              <div className="community-card-actions">
-                <button
-                  className={`btn-join ${community.is_joined ? "joined" : ""}`}
-                  onClick={() =>
-                    handleJoinToggle(community.id, community.is_joined)
-                  }
-                >
-                  {community.is_joined ? "Joined" : "Join"}
-                </button>
-                <Link to={`/community/${community.id}`} className="btn-visit">
-                  Visit
-                </Link>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </Layout>
