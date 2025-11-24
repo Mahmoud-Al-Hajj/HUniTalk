@@ -53,6 +53,28 @@ Route::group(["middleware" => "auth:api"], function () {
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = \App\Models\User::findOrFail($id);
+    // Check hash validity
+    if (! hash_equals(sha1($user->email), $hash)) {
+        return response()->json(['message' => 'Invalid verification link'], 400);
+    }
+    // Already verified?
+    if ($user->hasVerifiedEmail()) {
+        return response()->json(['message' => 'Email already verified'], 200);
+    }
+    // Mark verified
+    $user->email_verified_at = now();
+    $user->save();
+
+    return redirect('http://localhost:3000/home?verified=1');
+})->name('verification.verify');
+
+Route::post('/resend-verification', function (Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+
+    return response()->json(['message' => 'Verification link sent']);
+})->middleware('auth:api');
 
 
 //only us devs
