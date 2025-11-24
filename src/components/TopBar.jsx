@@ -47,6 +47,15 @@ function TopBar({ onCreatePost }) {
     };
   }, []);
 
+  useEffect(() => {
+    const handleLogoutEvent = () => {
+      setUserAvatar(null);
+      setUserName("U");
+    };
+    window.addEventListener("logout", handleLogoutEvent);
+    return () => window.removeEventListener("logout", handleLogoutEvent);
+  }, []);
+
   const handleCreateClick = () => {
     if (onCreatePost) {
       onCreatePost();
@@ -59,8 +68,18 @@ function TopBar({ onCreatePost }) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     localStorage.removeItem("userAvatar"); // Clear avatar on logout
     localStorage.removeItem("userName");
+    localStorage.removeItem("username");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("savedPosts");
+    // Notify other components that logout occurred so they can reset
+    try {
+      window.dispatchEvent(new Event("logout"));
+    } catch (e) {
+      // ignore
+    }
     navigate("/login");
   };
 

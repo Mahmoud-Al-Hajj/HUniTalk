@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
 import "../styles/login.css";
@@ -12,27 +12,17 @@ function Register() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:8000/api/register",
-        {
-          name: userName,
-          email: email,
-          password: password,
-          major: major,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        }
-      );
+      const payload = { name: userName, email, password, major };
+      console.debug("Register payload", payload);
+      const response = await api.post("/register", payload);
+      console.debug("Register response", response);
 
       if (response.status === 200 || response.status === 201) {
         // Store token if provided
@@ -55,16 +45,18 @@ function Register() {
           localStorage.setItem("user", JSON.stringify(userData));
         }
 
-        // Use SPA navigation; Navigate to Verify Email page
-        if (user.email_verified) {
-          // If email already verified, go to home
-          window.location.href = "/home";
+        const serverUser =
+          response.data.user ||
+          response.data.data?.user ||
+          JSON.parse(localStorage.getItem("user") || "{}");
+        if (serverUser?.email_verified) {
+          navigate("/home", { replace: true });
         } else {
-          // If not verified, go to verify email page
-          window.location.href = "/verify-email";
+          navigate("/verify-email", { replace: true });
         }
       }
     } catch (error) {
+      console.error("Registration error", error);
       if (error.response && error.response.data) {
         setErrors(
           error.response.data.errors || {
@@ -77,7 +69,8 @@ function Register() {
       } else {
         setErrors({
           register: [
-            "Unable to connect to the server. Please try again later.",
+            error.message ||
+              "Unable to connect to the server. Please try again later.",
           ],
         });
       }
@@ -89,7 +82,7 @@ function Register() {
       <div className="card-container">
         <h1 className="card-title">Create an account</h1>
 
-        <form>
+        <form onSubmit={handleSubmit}>
           {/* Error Messages */}
           {Object.keys(errors).length > 0 && (
             <div className="error-box">
@@ -165,7 +158,7 @@ function Register() {
           </div>
 
           {/* Submit Button */}
-          <button type="button" className="submit-btn" onClick={handleSubmit}>
+          <button type="submit" className="submit-btn">
             Create account
           </button>
 

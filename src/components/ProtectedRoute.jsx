@@ -10,11 +10,6 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user.email_verified) {
-    // Logged in but email not verified
-    return <Navigate to="/verify-email" replace />;
-  }
-
   return children;
 }
 

@@ -45,6 +45,11 @@ function Profile() {
     fetchProfileData();
     loadSavedPosts();
     loadAvatarFromStorage();
+    const handleLogout = () => {
+      setSavedPosts([]);
+    };
+    window.addEventListener("logout", handleLogout);
+    return () => window.removeEventListener("logout", handleLogout);
   }, []);
 
   const loadSavedPosts = () => {
@@ -100,6 +105,12 @@ function Profile() {
 
         // Save to localStorage
         localStorage.setItem("userAvatar", base64String);
+        // Dispatch a custom event for same-tab updates (TopBar listens to this)
+        try {
+          window.dispatchEvent(new Event("avatarUpdated"));
+        } catch (e) {
+          // ignore
+        }
 
         // Update profile state
         setProfile((prev) => ({

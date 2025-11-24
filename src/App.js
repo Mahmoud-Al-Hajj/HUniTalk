@@ -42,7 +42,14 @@ function App() {
             </PublicRoute>
           }
         />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route
+          path="/verify-email"
+          element={
+            <PublicRoute>
+              <VerifyEmail />
+            </PublicRoute>
+          }
+        />
 
         {/* Protected Routes - Only accessible when logged in */}
         <Route

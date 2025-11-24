@@ -24,6 +24,11 @@ function Home() {
   useEffect(() => {
     const saved = localStorage.getItem("savedPosts");
     if (saved) setSavedPosts(JSON.parse(saved));
+    const handleLogout = () => {
+      setSavedPosts([]);
+    };
+    window.addEventListener("logout", handleLogout);
+    return () => window.removeEventListener("logout", handleLogout);
   }, []);
 
   // Save to localStorage whenever savedPosts changes
