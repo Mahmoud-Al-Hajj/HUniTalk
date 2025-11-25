@@ -40,7 +40,7 @@ const CommentsPage = () => {
   const [viewerDocs, setViewerDocs] = useState([]); // [{ uri, fileName }]
   const [currentViewerIndex, setCurrentViewerIndex] = useState(0);
   const [viewerError, setViewerError] = useState(false);
-  const [viewerType, setViewerType] = useState('microsoft'); // 'microsoft' or 'google'
+  const [viewerType, setViewerType] = useState("microsoft"); // 'microsoft' or 'google'
   const [officeViewerError, setOfficeViewerError] = useState(false);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
@@ -815,7 +815,10 @@ const CommentsPage = () => {
                   // Google Docs Viewer (fallback)
                   const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
 
-                  const currentViewerUrl = viewerType === 'microsoft' ? microsoftViewerUrl : googleViewerUrl;
+                  const currentViewerUrl =
+                    viewerType === "microsoft"
+                      ? microsoftViewerUrl
+                      : googleViewerUrl;
 
                   return (
                     <div className="viewer-office-container">
@@ -824,18 +827,22 @@ const CommentsPage = () => {
                           <div className="office-viewer-controls">
                             <div className="viewer-type-toggle">
                               <button
-                                className={`toggle-btn ${viewerType === 'microsoft' ? 'active' : ''}`}
+                                className={`toggle-btn ${
+                                  viewerType === "microsoft" ? "active" : ""
+                                }`}
                                 onClick={() => {
-                                  setViewerType('microsoft');
+                                  setViewerType("microsoft");
                                   setOfficeViewerError(false);
                                 }}
                               >
                                 Microsoft Viewer
                               </button>
                               <button
-                                className={`toggle-btn ${viewerType === 'google' ? 'active' : ''}`}
+                                className={`toggle-btn ${
+                                  viewerType === "google" ? "active" : ""
+                                }`}
                                 onClick={() => {
-                                  setViewerType('google');
+                                  setViewerType("google");
                                   setOfficeViewerError(false);
                                 }}
                               >
@@ -843,7 +850,8 @@ const CommentsPage = () => {
                               </button>
                             </div>
                             <p className="viewer-hint">
-                              Having trouble? Try switching viewers or download the file.
+                              Having trouble? Try switching viewers or download
+                              the file.
                             </p>
                           </div>
 
@@ -855,13 +863,17 @@ const CommentsPage = () => {
                             onLoad={(e) => {
                               // Check if iframe loaded successfully
                               try {
-                                const iframeDoc = e.target.contentDocument || e.target.contentWindow.document;
+                                const iframeDoc =
+                                  e.target.contentDocument ||
+                                  e.target.contentWindow.document;
                                 if (!iframeDoc) {
                                   setOfficeViewerError(true);
                                 }
                               } catch (err) {
                                 // Cross-origin, but that's okay - it means it loaded
-                                console.log('Office viewer loaded (cross-origin)');
+                                console.log(
+                                  "Office viewer loaded (cross-origin)"
+                                );
                               }
                             }}
                           />
@@ -874,7 +886,8 @@ const CommentsPage = () => {
                           </p>
                           <p className="unsupported-filename">{fileName}</p>
                           <p className="unsupported-hint">
-                            Unable to preview this document. Please download to view or try opening in a new tab.
+                            Unable to preview this document. Please download to
+                            view or try opening in a new tab.
                           </p>
                           <div className="unsupported-actions">
                             <a
