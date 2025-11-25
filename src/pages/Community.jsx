@@ -20,7 +20,9 @@ const Community = () => {
   const [newPost, setNewPost] = useState({
     title: "",
     body: "",
+    attachments: [], // <--- store base64 strings here
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { userVotes, handleVote, initializeVotes } = useVoting(
     posts,
@@ -185,6 +187,136 @@ const Community = () => {
     }
   };
 
+  // Get MIME type from file extension
+  const getMimeTypeFromExtension = (filename) => {
+    const ext = filename.split(".").pop().toLowerCase();
+    const mimeMap = {
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ppt: "application/vnd.ms-powerpoint",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      doc: "application/msword",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      xls: "application/vnd.ms-excel",
+      pdf: "application/pdf",
+      txt: "text/plain",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+    };
+    return mimeMap[ext] || null;
+  };
+
+  // Convert ArrayBuffer to base64 using btoa
+  const arrayBufferToBase64 = (buffer) => {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  // Convert file to base64 using ArrayBuffer for proper encoding
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const arrayBuffer = reader.result;
+        const base64Data = arrayBufferToBase64(arrayBuffer);
+
+        // Get MIME type from extension, fallback to file.type
+        const mimeFromExt = getMimeTypeFromExtension(file.name);
+        const finalMime =
+          mimeFromExt || file.type || "application/octet-stream";
+
+        // Construct data URL with correct MIME type
+        const dataUrl = `data:${finalMime};base64,${base64Data}`;
+
+        resolve(dataUrl);
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsArrayBuffer(file);
+    });
+
+  // Handle file selection
+  const handleFilesSelected = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Optional limits
+    const MAX_FILES = 5;
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file
+
+    const existingCount = newPost.attachments.length;
+    if (existingCount + files.length > MAX_FILES) {
+      alert(`You can attach up to ${MAX_FILES} files.`);
+      return;
+    }
+
+    const converted = [];
+
+    for (const file of files) {
+      // Validate based on file extension, not browser-detected MIME type
+      const ext = file.name.split(".").pop().toLowerCase();
+      const allowedExtensions = [
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "webp",
+        "svg", // images
+        "pdf", // PDF
+        "doc",
+        "docx", // Word
+        "xls",
+        "xlsx", // Excel
+        "ppt",
+        "pptx", // PowerPoint
+        "txt", // Text
+      ];
+
+      if (!allowedExtensions.includes(ext)) {
+        alert(`${file.name} is not a supported file type.`);
+        continue;
+      }
+
+      if (file.size > MAX_SIZE_BYTES) {
+        alert(`${file.name} is too large. Max size is 5MB.`);
+        continue;
+      }
+
+      try {
+        const base64 = await fileToBase64(file);
+        console.log(base64);
+        converted.push({ base64, name: file.name, type: file.type });
+      } catch (err) {
+        console.error("Failed converting file:", err);
+      }
+    }
+
+    if (converted.length) {
+      setNewPost((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...converted],
+      }));
+    }
+
+    // reset input so same file can be selected again if needed
+    e.target.value = "";
+  };
+
+  // Remove attachment by index
+  const removeAttachment = (index) => {
+    setNewPost((prev) => {
+      const copy = [...prev.attachments];
+      copy.splice(index, 1);
+      return { ...prev, attachments: copy };
+    });
+  };
+
   const handleCreatePost = async (e) => {
     e.preventDefault();
 
@@ -193,12 +325,19 @@ const Community = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
-      const response = await api.post("/posts", {
+      const payload = {
         communities_id: communityId,
         title: newPost.title,
         body: newPost.body,
-      });
+        ...(newPost.attachments.length > 0 && {
+          attachments: newPost.attachments.map((att) => att.base64),
+        }),
+      };
+
+      const response = await api.post("/posts", payload);
 
       // Normalize the new post data to match our structure
       const createdPost = response.data;
@@ -230,11 +369,13 @@ const Community = () => {
       };
 
       setPosts([normalizedNewPost, ...posts]);
-      setNewPost({ title: "", body: "" });
+      setNewPost({ title: "", body: "", attachments: [] });
       setIsModalOpen(false);
     } catch (err) {
       console.error("Error creating post:", err);
       alert("Failed to create post. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -439,16 +580,67 @@ const Community = () => {
                   />
                 </div>
 
+                {/* Attachments section */}
+                <div className="form-group attachments-section">
+                  <label className="attachments-label">Attachments</label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    multiple
+                    onChange={handleFilesSelected}
+                    className="form-input"
+                  />
+                  <div className="attachments-preview">
+                    {newPost.attachments.map((att, idx) => {
+                      // Check if it's an image by looking at the base64 prefix
+                      const isImage = att.base64.startsWith("data:image/");
+
+                      return (
+                        <div key={idx} className="attachment-item">
+                          {isImage ? (
+                            <img
+                              src={att.base64}
+                              alt={`attachment-${idx}`}
+                              className="attachment-thumb"
+                            />
+                          ) : (
+                            <div className="attachment-file-preview">
+                              <div className="file-icon">📄</div>
+                              <span className="file-name">{att.name}</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            className="remove-attachment-btn"
+                            onClick={() => removeAttachment(idx)}
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <small className="attachments-hint">
+                    Up to 5 files (images, PDFs, documents). Max 5MB each.
+                  </small>
+                </div>
+
                 <div className="form-actions">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     className="modal-cancel-btn"
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="modal-submit-btn">
-                    Post
+                  <button
+                    type="submit"
+                    className="modal-submit-btn"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Posting..." : "Post"}
                   </button>
                 </div>
               </form>
