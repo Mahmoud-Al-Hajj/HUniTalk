@@ -8,7 +8,7 @@ use App\Http\Controllers\PostsController;
 use App\Http\Controllers\CommunitiesController;
 use App\Http\Controllers\CommentsController;
 use App\Services\UserService;
-
+use \App\Models\User;
 
 
 Route::group(["middleware" => "auth:api"], function () {
@@ -54,7 +54,7 @@ Route::group(["middleware" => "auth:api"], function () {
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) {
-    $user = \App\Models\User::findOrFail($id);
+    $user = User::findOrFail($id);
     // Check hash validity
     if (! hash_equals(sha1($user->email), $hash)) {
         return response()->json(['message' => 'Invalid verification link'], 400);

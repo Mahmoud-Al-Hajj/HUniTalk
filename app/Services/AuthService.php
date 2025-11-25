@@ -10,10 +10,6 @@ use \PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Auth\Events\Registered;
 
 
-
-
-
-
 class AuthService{
 
     static public function login($request){

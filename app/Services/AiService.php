@@ -45,8 +45,6 @@ If the context does not provide enough information to make a confident answer, s
 Use a professional, academic tone appropriate for students.
 Do not hallucinate or invent references. Facts must come from the source posts.
 Limit your answer to about 300 words max (unless the question explicitly asks for more).
-Provide at least 1 sources, at most 4 sources.
-
         ";
 
         if ($mode === 'summarize' && $context) {

@@ -88,4 +88,5 @@ public function getHighestRatedPosts(){
                 'upvotes' => $post->upvotes,
             ])->toArray();
 }
+
 }
