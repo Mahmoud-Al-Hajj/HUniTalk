@@ -46,7 +46,7 @@ class AiController extends Controller
 
         // SUMMARIZE MODE
         if ($mode === 'summarize') {
-            $postId = $req->input('post_id') ?? $this->tools->searchPosts($userInput, 1)[0]['id'] ?? null;
+            $postId = $req->input('post_id') ?? $this->extractPostId($userInput) ?? ($this->tools->searchPosts($userInput, 1)[0]['id'] ?? null);
 
             if (! $postId) {
                 return response()->json([
@@ -69,18 +69,39 @@ class AiController extends Controller
             ]);
         }
 
+        // ANSWER MODE
         $matches = $this->tools->searchPosts($userInput, 4);
 
-        // Build context from matches (title + snippet)
-        $contextParts = [];
-        foreach ($matches as $m) {
-            $contextParts[] = "Post ID: {$m['id']}\nTitle: {$m['title']}\nSnippet: {$m['snippet']}";
+        // Load full posts (body + top comments) for each match
+        $fullPosts = $this->tools->getFullPostsFromMatches($matches, 20);
+
+        // Build AI context containing bodies + comments
+        $context = $this->tools->buildAiContext($fullPosts);
+
+        // If no usable context, return strict fallback (do not call LLM)
+        if (empty(trim($context))) {
+            return response()->json([
+                'type' => 'answer',
+                'result' => [
+                    'answer' => 'No relevant posts found.',
+                ],
+                'matches' => $matches
+            ]);
         }
 
-        $context = implode("\n---\n", $contextParts);
-
-        // Ask AI
+        // Ask AI (caller ensures context is body+comments)
         $aiRes = AiService::ask($req, ['mode' => 'answer', 'context' => $context]);
+
+        // If AiService signals NO_CONTEXT unexpectedly, fallback
+        if (isset($aiRes['reply']) && $aiRes['reply'] === 'NO_CONTEXT') {
+            return response()->json([
+                'type' => 'answer',
+                'result' => [
+                    'answer' => 'No relevant posts found.',
+                ],
+                'matches' => $matches
+            ]);
+        }
 
         $replyText = $aiRes['reply'] ?? '';
         $parsed = null;

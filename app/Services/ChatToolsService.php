@@ -28,6 +28,7 @@ class ChatToolsService{
             ];
         })->toArray();
   }
+
   // Get post and top comments (sanitized + truncated)
   public function getPostThread(int $postId, int $limitComments = 20): ?array
   {
@@ -48,7 +49,53 @@ class ChatToolsService{
             'title' => $post->title,
             'body' => mb_strimwidth(strip_tags($post->body), 0, 6000),
             'comments' => $comments,
+            'upvotes' => $post->upvotes,
         ];
+    }
+
+    /**
+     * Given an array of search matches (as returned by searchPosts),
+     * load full post threads (post body + comments) for each match.
+     *
+     * Returns array of full threads (or empty array if none).
+     */
+    public function getFullPostsFromMatches(array $matches, int $limitComments = 20): array
+    {
+        $full = [];
+        foreach ($matches as $m) {
+            if (!isset($m['id'])) continue;
+            $thread = $this->getPostThread((int)$m['id'], $limitComments);
+            if ($thread) $full[] = $thread;
+        }
+        return $full;
+    }
+
+    /**
+     * Build a plain-text context block suitable to send to the AI.
+     * Each post contains Title, Body and Comments (bullet list).
+     */
+    public function buildAiContext(array $fullPosts): string
+    {
+        $context = "";
+
+        foreach ($fullPosts as $p) {
+            $context .= "Post ID: {$p['id']}\n";
+            $context .= "Title: {$p['title']}\n";
+            $context .= "Body:\n{$p['body']}\n";
+
+            if (!empty($p['comments'])) {
+                $context .= "Comments:\n";
+                foreach ($p['comments'] as $c) {
+                    // ensure single-line bullets
+                    $line = preg_replace("/\s+/", " ", trim($c));
+                    $context .= "- {$line}\n";
+                }
+            }
+
+            $context .= "\n====================\n\n";
+        }
+
+        return trim($context);
     }
 
 public function summarizeSpecificPost(int $postId, int $limitComments = 10): ?array{
