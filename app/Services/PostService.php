@@ -6,12 +6,15 @@ use App\Models\Vote;
 use App\Models\SavedPost;
 use App\Models\PostComment;
 use Illuminate\Support\Facades\Auth;
+use App\Services\Base64ConverterService;
+use \App\Models\Attachment;
 
 
 class PostService{
 
     public static function createPost($request){
         $post = new Post();
+
         $user_id = Auth::id();
         $post->user_id = $user_id;
         $post->communities_id = $request->communities_id;
@@ -20,8 +23,23 @@ class PostService{
         $post->downvotes = 0;
         $post->body = $request->body;
         $post->save();
-        return $post;
+
+       if ($request->attachments && is_array($request->attachments)) {
+  $urls = Base64ConverterService::convert($request->attachments);
+
+        foreach ($urls as $url) {
+            $attachment = new Attachment();
+            $attachment->post_id = $post->id;
+            $attachment->user_id = $user_id;
+            $attachment->filename = $url;
+            $attachment->save();
+        }
     }
+
+    return $post->load('attachments');
+}
+
+
     public static function getAllPosts($user_id = null, $perPage = 10){
         $posts = Post::with(['user','community'])
         ->withCount('comments')
@@ -72,7 +90,9 @@ class PostService{
         }
 
         return $posts;
-    }    public static function DeletePost($id){
+    }
+
+     public static function DeletePost($id){
         $post = Post::findOrFail($id);
         $post->delete();
         return "Deleted Successfully";
@@ -97,7 +117,7 @@ class PostService{
                 ->exists();
         }
 
-        return $post;
+    return $post->load('attachments');
     }
 
     public static function GetPostsByUserId($user_id){
@@ -149,7 +169,7 @@ class PostService{
             });
         }
 
-        return $posts;
+        return $posts->load('attachments');
     }
 
     public static function UpVotePost($post_id, $user_id){
@@ -195,18 +215,18 @@ class PostService{
 
         if ($existingVote) {
             if ($existingVote->type === 'downvote') {
-                // Remove downvote
+
                 $existingVote->delete();
                 $post->decrement('downvotes');
             } else {
-                // Change upvote to downvote
+
                 $existingVote->type = 'downvote';
                 $existingVote->save();
                 $post->decrement('upvotes');
                 $post->increment('downvotes');
             }
         } else {
-            // Add downvote
+
             $vote = new Vote();
             $vote->post_id = $post->id;
             $vote->user_id = $user_id;

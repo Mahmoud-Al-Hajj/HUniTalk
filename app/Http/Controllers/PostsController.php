@@ -14,7 +14,8 @@ class PostsController extends Controller{
             'communities_id' => 'required|integer|exists:communities,id',
             'title' => 'required|string|max:255',
             'body' => 'nullable|string',
-        ]);
+            'attachments' => 'array|max:10', // max of 10 attachments by policy
+    ]);
         $request->merge(['user_id' => Auth::id()]);
         $post = PostService::createPost($request);
         return response()->json($post, 200);

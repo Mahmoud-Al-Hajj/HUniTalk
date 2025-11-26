@@ -25,5 +25,8 @@ class Post extends Model
     {
         return $this->hasMany(Vote::class);
     }
-
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
 }
