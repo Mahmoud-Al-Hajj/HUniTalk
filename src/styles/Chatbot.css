@@ -173,3 +173,26 @@
 .chat-input::placeholder {
   color: #9ca3af;
 }
+.message-sources {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.message-sources ul {
+  margin: 6px 0 0 18px;
+  padding: 0;
+}
+.source-item {
+  margin-bottom: 6px;
+}
+.source-item a {
+  color: #7cc3ff;
+  text-decoration: none;
+}
+.source-reason {
+  color: #cbd5e1;
+  font-size: 13px;
+  margin-left: 6px;
+}

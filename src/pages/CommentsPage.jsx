@@ -50,6 +50,11 @@ const CommentsPage = () => {
     "commentVotes"
   );
 
+  // --- AI Summary states ---
+  const [aiSummary, setAiSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState(null);
+
   useEffect(() => {
     fetchPostAndComments();
     // close viewer when post changes
@@ -82,6 +87,35 @@ const CommentsPage = () => {
       console.error("Error fetching post:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSummarizePost = async () => {
+    if (!postId) return;
+
+    try {
+      setSummarizing(true);
+      setSummaryError(null);
+
+      const response = await api.post("/ai/ask", {
+        message: `Summarize this post ${postId}`,
+        mode: "summarize",
+        post_id: postId,
+      });
+      console.log("request sent", response);
+      console.log("AI response:", response.data);
+      // The AI reply is inside response.data.ai.reply
+      const aiReply = response.data?.ai?.reply || "No summary available.";
+      const aiRaw = response.data?.ai?.raw || null;
+
+      setAiSummary(aiReply);
+    } catch (err) {
+      console.error("AI summarize error:", err);
+      setSummaryError(
+        err.response?.data?.message || "Failed to get summary from AI."
+      );
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -178,10 +212,9 @@ const CommentsPage = () => {
       setDeletingComment(null);
     }
   };
-  // Replace your existing resolveAttachments & buildViewerDocs with this
 
   // -----------------------
-  // Attachment helpers (fixed)
+  // Attachment helpers
   // -----------------------
   const resolveAttachments = () => {
     if (!post) return [];
@@ -192,51 +225,12 @@ const CommentsPage = () => {
       post.attachments_list ||
       [];
 
-    console.log("Raw attachments:", raw);
-    console.log("Post object:", post);
-
     const getFileNameFromUrl = (url) => {
       try {
         const urlObj = new URL(url);
         const pathname = urlObj.pathname;
         let filename = pathname.split("/").pop();
-        if (filename && filename !== "") {
-          const mimeToExt = {
-            "vnd.ms-powerpoint": "ppt",
-            "vnd.openxmlformats-officedocument.presentationml.presentation":
-              "pptx",
-            msword: "doc",
-            "vnd.openxmlformats-officedocument.wordprocessingml.document":
-              "docx",
-            "vnd.ms-excel": "xls",
-            "vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
-            pdf: "pdf",
-            plain: "txt",
-            jpeg: "jpg",
-            png: "png",
-            gif: "gif",
-            webp: "webp",
-            bmp: "bmp",
-            "svg+xml": "svg",
-          };
-
-          const parts = filename.split(".");
-          if (parts.length > 1) {
-            const lastPart = parts[parts.length - 1];
-            if (mimeToExt[lastPart]) {
-              parts[parts.length - 1] = mimeToExt[lastPart];
-              filename = parts.join(".");
-            } else if (parts.length > 2) {
-              const mime = parts.slice(-2).join(".");
-              if (mimeToExt[mime]) {
-                parts.splice(-2, 2, mimeToExt[mime]);
-                filename = parts.join(".");
-              }
-            }
-          }
-          return filename;
-        }
-        // If no filename in path, check query params
+        if (filename && filename !== "") return filename;
         const nameParam =
           urlObj.searchParams.get("name") ||
           urlObj.searchParams.get("file") ||
@@ -250,46 +244,14 @@ const CommentsPage = () => {
 
     const normalizeFileName = (filename) => {
       if (!filename) return null;
-      const mimeToExt = {
-        "vnd.ms-powerpoint": "ppt",
-        "vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
-        msword: "doc",
-        "vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-        "vnd.ms-excel": "xls",
-        "vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
-        pdf: "pdf",
-        plain: "txt",
-        jpeg: "jpg",
-        png: "png",
-        gif: "gif",
-        webp: "webp",
-        bmp: "bmp",
-        "svg+xml": "svg",
-      };
-
-      const parts = filename.split(".");
-      if (parts.length > 1) {
-        const lastPart = parts[parts.length - 1];
-        if (mimeToExt[lastPart]) {
-          parts[parts.length - 1] = mimeToExt[lastPart];
-          return parts.join(".");
-        } else if (parts.length > 2) {
-          const mime = parts.slice(-2).join(".");
-          if (mimeToExt[mime]) {
-            parts.splice(-2, 2, mimeToExt[mime]);
-            return parts.join(".");
-          }
-        }
-      }
       return filename;
     };
 
-    const resolved = raw
+    return raw
       .map((item) => {
         if (!item) return null;
         if (typeof item === "string") return { url: item, name: item };
         if (typeof item === "object") {
-          // Backend returns URL in 'filename' field
           const url =
             item.filename ||
             item.url ||
@@ -297,43 +259,30 @@ const CommentsPage = () => {
             item.file ||
             item.storage_url ||
             null;
-          // Extract just the filename from the URL for display
           const rawName = item.name || getFileNameFromUrl(url) || "file";
           const name = normalizeFileName(rawName);
-          console.log("Processing attachment:", { item, url, rawName, name });
           return { url, name };
         }
         return null;
       })
       .filter(Boolean);
-
-    console.log("Resolved attachments:", resolved);
-    return resolved;
   };
 
   const buildViewerDocs = (attachmentsArray) => {
-    // Build docs for viewer: { uri: 'full-url', fileName: 'display-name' }
-    return attachmentsArray.map((att) => {
-      console.log("Building viewer doc:", att);
-      return {
-        uri: att.url, // Keep the full URL
-        fileName: att.name || "file", // Use the name we already extracted
-      };
-    });
+    return attachmentsArray.map((att) => ({
+      uri: att.url,
+      fileName: att.name || "file",
+    }));
   };
 
   const openInViewer = (index = 0, attachmentsArray) => {
-    console.log("Opening viewer with attachments:", attachmentsArray);
     if (!attachmentsArray || !attachmentsArray.length) return;
 
     setCurrentViewerIndex(index);
     const docs = buildViewerDocs(attachmentsArray);
-    console.log("Viewer docs:", docs);
 
     // Rotate so the clicked index is first
     const ordered = docs.slice(index).concat(docs.slice(0, index));
-    console.log("Ordered docs:", ordered);
-
     setViewerDocs(ordered);
     setViewerOpen(true);
     setViewerError(false);
@@ -344,7 +293,6 @@ const CommentsPage = () => {
     setViewerDocs([]);
   }, []);
 
-  // handle Escape to close viewer
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape" && viewerOpen) closeViewer();
@@ -470,7 +418,6 @@ const CommentsPage = () => {
     );
   }
 
-  // Resolve attachments for rendering
   const attachments = resolveAttachments();
 
   return (
@@ -499,7 +446,31 @@ const CommentsPage = () => {
         </div>
 
         <h1 className="post-title">{post.title}</h1>
+
         {post.body && <div className="post-body-section">{post.body}</div>}
+
+        {/* --- Summarize Button --- */}
+        <div style={{ margin: "10px 0" }}>
+          <button
+            className="summarize-btn"
+            onClick={handleSummarizePost}
+            disabled={summarizing}
+          >
+            {summarizing ? "Summarizing..." : "Summarize"}
+          </button>
+        </div>
+
+        {/* --- AI Summary Display --- */}
+        {(aiSummary || summaryError) && (
+          <div className="ai-summary-box">
+            <h3>Summary:</h3>
+            {summaryError ? (
+              <p style={{ color: "red" }}>{summaryError}</p>
+            ) : (
+              <p>{aiSummary}</p>
+            )}
+          </div>
+        )}
 
         {/* --- Attachments gallery --- */}
         {attachments.length > 0 && (
@@ -638,333 +609,44 @@ const CommentsPage = () => {
                 <button type="button" className="comment-more-btn">
                   <MoreHorizontal size={16} />
                 </button>
-                <button
-                  type="button"
-                  className="comment-cancel-btn"
-                  onClick={handleCancelComment}
-                  disabled={submittingComment}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="comment-submit-btn"
-                  disabled={submittingComment}
-                >
-                  {submittingComment ? "Posting..." : "Comment"}
-                </button>
+                <div className="comment-submit-actions">
+                  <button
+                    type="button"
+                    onClick={handleCancelComment}
+                    className="comment-cancel-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="submit-btn"
+                    disabled={submittingComment}
+                  >
+                    {submittingComment ? "Posting..." : "Post"}
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </form>
 
         <div className="comments-list">
-          {comments.length === 0 ? (
-            <p className="no-comments">
-              No comments yet. Be the first to comment!
-            </p>
-          ) : (
-            comments.map((comment) => (
-              <Comment key={comment.id} comment={comment} />
-            ))
-          )}
+          {comments.map((comment) => (
+            <Comment key={comment.id} comment={comment} />
+          ))}
         </div>
       </div>
 
-      {/* Custom File Viewer Modal */}
-      {/* Custom File Viewer Modal */}
-      {viewerOpen && viewerDocs.length > 0 && (
-        <div className="docviewer-modal" role="dialog" aria-modal="true">
-          <div className="docviewer-backdrop" onClick={closeViewer} />
-          <div className="docviewer-panel">
-            <div className="docviewer-header">
-              <div className="docviewer-title">
-                {viewerDocs[0]?.fileName || "Attachment"}
-              </div>
-              <div className="docviewer-actions">
-                <a
-                  href={viewerDocs[0]?.uri}
-                  download={viewerDocs[0]?.fileName}
-                  className="docviewer-download-btn"
-                  title="Download"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <DownloadCloud size={18} />
-                </a>
-                <button className="docviewer-close" onClick={closeViewer}>
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="docviewer-body">
-              {(() => {
-                const url = viewerDocs[0]?.uri;
-                const fileName = viewerDocs[0]?.fileName || "";
-
-                // Extract file extension
-                const getFileType = (name) => {
-                  const ext = name.toLowerCase().split(".").pop();
-                  return ext;
-                };
-
-                const fileType = getFileType(fileName);
-
-                // File type categories
-                const isImage = [
-                  "jpg",
-                  "jpeg",
-                  "png",
-                  "gif",
-                  "webp",
-                  "bmp",
-                  "svg",
-                ].includes(fileType);
-                const isPdf = fileType === "pdf";
-                const isWord = ["doc", "docx"].includes(fileType);
-                const isExcel = ["xls", "xlsx"].includes(fileType);
-                const isPowerPoint = ["ppt", "pptx"].includes(fileType);
-                const isText = ["txt", "csv", "log"].includes(fileType);
-                const isOfficeDoc = isWord || isExcel || isPowerPoint;
-
-                // Image viewer
-                if (isImage) {
-                  return (
-                    <div className="viewer-image-container">
-                      <img
-                        src={url}
-                        alt={fileName}
-                        className="viewer-image"
-                        onError={() => setViewerError(true)}
-                      />
-                    </div>
-                  );
-                }
-
-                // PDF viewer - React PDF Viewer
-                // PDF viewer - React PDF Viewer
-                if (isPdf) {
-                  return (
-                    <div className="viewer-pdf-container">
-                      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                        <div style={{ height: "100%", overflow: "auto" }}>
-                          <Viewer
-                            fileUrl={url}
-                            plugins={[defaultLayoutPluginInstance]}
-                            onDocumentLoad={(e) => {
-                              setViewerError(false);
-                              console.log(
-                                "PDF loaded successfully:",
-                                e.doc.numPages,
-                                "pages"
-                              );
-                            }}
-                            renderError={(error) => {
-                              console.error("PDF render error:", error);
-                              return (
-                                <div className="viewer-error-overlay">
-                                  <p>Unable to load PDF</p>
-                                  <p className="error-details">
-                                    {error.message}
-                                  </p>
-                                  <div className="unsupported-actions">
-                                    <a
-                                      href={url}
-                                      download={fileName}
-                                      className="unsupported-download-btn"
-                                    >
-                                      <DownloadCloud size={16} /> Download PDF
-                                    </a>
-                                    <a
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="unsupported-download-btn secondary"
-                                    >
-                                      Open in New Tab
-                                    </a>
-                                  </div>
-                                </div>
-                              );
-                            }}
-                            renderLoader={(percentages) => (
-                              <div className="viewer-loading">
-                                <div className="loading-spinner">
-                                  <div className="spinner"></div>
-                                  <p>
-                                    Loading PDF... {Math.round(percentages)}%
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          />
-                        </div>
-                      </Worker>
-                    </div>
-                  );
-                }
-                // Office documents viewer using Microsoft Office Online
-                if (isOfficeDoc) {
-                  // Encode URL for viewers
-                  const encodedUrl = encodeURIComponent(url);
-
-                  // Microsoft Office Online Viewer (works for Word, Excel, PowerPoint)
-                  const microsoftViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
-
-                  // Google Docs Viewer (fallback)
-                  const googleViewerUrl = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
-
-                  const currentViewerUrl =
-                    viewerType === "microsoft"
-                      ? microsoftViewerUrl
-                      : googleViewerUrl;
-
-                  return (
-                    <div className="viewer-office-container">
-                      {!officeViewerError ? (
-                        <>
-                          <div className="office-viewer-controls">
-                            <div className="viewer-type-toggle">
-                              <button
-                                className={`toggle-btn ${
-                                  viewerType === "microsoft" ? "active" : ""
-                                }`}
-                                onClick={() => {
-                                  setViewerType("microsoft");
-                                  setOfficeViewerError(false);
-                                }}
-                              >
-                                Microsoft Viewer
-                              </button>
-                              <button
-                                className={`toggle-btn ${
-                                  viewerType === "google" ? "active" : ""
-                                }`}
-                                onClick={() => {
-                                  setViewerType("google");
-                                  setOfficeViewerError(false);
-                                }}
-                              >
-                                Google Viewer
-                              </button>
-                            </div>
-                            <p className="viewer-hint">
-                              Having trouble? Try switching viewers or download
-                              the file.
-                            </p>
-                          </div>
-
-                          <iframe
-                            src={currentViewerUrl}
-                            className="viewer-iframe office-iframe"
-                            title={fileName}
-                            onError={() => setOfficeViewerError(true)}
-                            onLoad={(e) => {
-                              // Check if iframe loaded successfully
-                              try {
-                                const iframeDoc =
-                                  e.target.contentDocument ||
-                                  e.target.contentWindow.document;
-                                if (!iframeDoc) {
-                                  setOfficeViewerError(true);
-                                }
-                              } catch (err) {
-                                // Cross-origin, but that's okay - it means it loaded
-                                console.log(
-                                  "Office viewer loaded (cross-origin)"
-                                );
-                              }
-                            }}
-                          />
-                        </>
-                      ) : (
-                        <div className="viewer-unsupported">
-                          <div className="unsupported-icon">📄</div>
-                          <p className="unsupported-text">
-                            {fileType.toUpperCase()} Document
-                          </p>
-                          <p className="unsupported-filename">{fileName}</p>
-                          <p className="unsupported-hint">
-                            Unable to preview this document. Please download to
-                            view or try opening in a new tab.
-                          </p>
-                          <div className="unsupported-actions">
-                            <a
-                              href={url}
-                              download={fileName}
-                              className="unsupported-download-btn"
-                            >
-                              <DownloadCloud size={16} />
-                              Download File
-                            </a>
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="unsupported-download-btn secondary"
-                            >
-                              Open in New Tab
-                            </a>
-                            <button
-                              onClick={() => setOfficeViewerError(false)}
-                              className="unsupported-download-btn secondary"
-                            >
-                              Try Again
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                // Text files - Direct display
-                if (isText) {
-                  return (
-                    <div className="viewer-document-container">
-                      <iframe
-                        src={url}
-                        className="viewer-iframe"
-                        title={fileName}
-                        style={{ background: "white" }}
-                      />
-                    </div>
-                  );
-                }
-
-                // Unsupported file types
-                return (
-                  <div className="viewer-unsupported">
-                    <div className="unsupported-icon">
-                      <Maximize2 size={48} />
-                    </div>
-                    <p className="unsupported-text">Preview not available</p>
-                    <p className="unsupported-filename">{fileName}</p>
-                    <p className="unsupported-type">File type: .{fileType}</p>
-                    <div className="unsupported-actions">
-                      <a
-                        href={url}
-                        download={fileName}
-                        className="unsupported-download-btn"
-                      >
-                        <DownloadCloud size={16} />
-                        Download File
-                      </a>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="unsupported-download-btn secondary"
-                      >
-                        Open in New Tab
-                      </a>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+      {viewerOpen && (
+        <div className="doc-viewer-overlay">
+          <button className="close-viewer" onClick={closeViewer}>
+            <X size={20} />
+          </button>
+          <DocViewer
+            documents={viewerDocs}
+            pluginRenderers={DocViewerRenderers}
+            activeDocumentIndex={currentViewerIndex}
+          />
         </div>
       )}
     </div>
