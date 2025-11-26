@@ -284,7 +284,7 @@ function Chatbot() {
             ref={inputRef}
             type="text"
             className="chat-input"
-            placeholder="How do I join the CS community?"
+            placeholder="What is mentioned in the posts about Operating Systems?"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => {
