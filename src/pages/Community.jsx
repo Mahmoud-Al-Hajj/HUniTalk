@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import PostCard from "../components/PostCard";
@@ -9,7 +9,7 @@ import "../styles/Community.css";
 const Community = () => {
   const { communityId } = useParams();
   const navigate = useNavigate();
-
+  const currentUserID = JSON.parse(localStorage.getItem("userId"));
   // State management
   const [communityData, setCommunityData] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -20,9 +20,21 @@ const Community = () => {
   const [newPost, setNewPost] = useState({
     title: "",
     body: "",
-    attachments: [], // <--- store base64 strings here
+    attachments: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Study Room State
+  const [showStudyRoom, setShowStudyRoom] = useState(false);
+  const [studyRoomData, setStudyRoomData] = useState(null);
+  const [studyRoomMessages, setStudyRoomMessages] = useState([]);
+  const [studyRoomMembers, setStudyRoomMembers] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isInStudyRoom, setIsInStudyRoom] = useState(false);
+  const [studyRoomLoading, setStudyRoomLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+  const messagePollingInterval = useRef(null);
+  const heartbeatInterval = useRef(null);
 
   const { userVotes, handleVote, initializeVotes } = useVoting(
     posts,
@@ -55,6 +67,56 @@ const Community = () => {
     fetchCommunityPosts();
   }, [communityId]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (messagePollingInterval.current) {
+        clearInterval(messagePollingInterval.current);
+      }
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+      }
+    };
+  }, []);
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [studyRoomMessages]);
+
+  // Poll for new messages and send heartbeat when in study room
+  useEffect(() => {
+    if (isInStudyRoom && studyRoomData) {
+      // Fetch messages immediately
+      fetchStudyRoomMessages();
+      fetchStudyRoomMembers();
+
+      // Poll for messages every 5 seconds
+      messagePollingInterval.current = setInterval(() => {
+        fetchStudyRoomMessages();
+        fetchStudyRoomMembers();
+      }, 3000);
+
+      // Send heartbeat every 60 seconds to stay "online"
+      heartbeatInterval.current = setInterval(() => {
+        sendHeartbeat();
+      }, 50000);
+
+      return () => {
+        if (messagePollingInterval.current) {
+          clearInterval(messagePollingInterval.current);
+        }
+        if (heartbeatInterval.current) {
+          clearInterval(heartbeatInterval.current);
+        }
+      };
+    }
+  }, [isInStudyRoom, studyRoomData]);
+
   // Backend Integration - Fetch Community Data
   const fetchCommunityData = async () => {
     try {
@@ -64,13 +126,16 @@ const Community = () => {
       const response = await api.get(`/communities/${communityId}`);
       const communityDataFromApi = response.data;
 
-      // Normalize field names
       const normalizedData = {
         ...communityDataFromApi,
         members_count:
           communityDataFromApi.followers_count ||
           communityDataFromApi.members_count ||
           0,
+        study_room_id:
+          communityDataFromApi.study_rooms?.id ||
+          communityDataFromApi.study_room_id ||
+          null,
       };
 
       setCommunityData(normalizedData);
@@ -95,9 +160,7 @@ const Community = () => {
         ? response.data
         : response.data?.data || response.data?.posts || [];
 
-      // Normalize post data - remove nested objects that could cause rendering errors
       const normalizedPosts = postsData.map((post) => {
-        // Calculate vote count from upvotes/downvotes or use existing count
         let voteCount = 0;
         if (post.upvotes !== undefined && post.downvotes !== undefined) {
           voteCount = post.upvotes - post.downvotes;
@@ -106,11 +169,9 @@ const Community = () => {
         } else if (post.votes_count !== undefined) {
           voteCount = post.votes_count;
         } else if (Array.isArray(post.votes)) {
-          // If votes is an array, calculate from upvotes/downvotes
           voteCount = (post.upvotes || 0) - (post.downvotes || 0);
         }
 
-        // Extract author name safely
         let authorName = "Anonymous";
         if (typeof post.author === "string") {
           authorName = post.author;
@@ -120,7 +181,6 @@ const Community = () => {
           authorName = post.author.name || post.author.username || "Anonymous";
         }
 
-        // Extract community name safely
         let communityName = "";
         if (typeof post.community === "object" && post.community !== null) {
           communityName = post.community.name || "";
@@ -130,18 +190,16 @@ const Community = () => {
           communityName = post.community_name || "";
         }
 
-        // Return clean post object without nested arrays/objects
         return {
           id: post.id,
           title: post.title || "",
           body: post.body || post.content || "",
           votes: voteCount,
           comments: post.comments_count || post.comments || 0,
-          user_vote: post.user_vote, // Keep as is (number: 1, -1, or null)
+          user_vote: post.user_vote,
           author: authorName,
           community_name: communityName,
           created_at: post.created_at || post.timestamp || null,
-          // Don't include the votes array or other nested objects
         };
       });
 
@@ -150,7 +208,6 @@ const Community = () => {
     } catch (err) {
       console.error("Error fetching community posts:", err);
       setError("Failed to load posts. Please try again later.");
-      // Don't block the whole page if posts fail, just show empty or error in feed
     }
   };
 
@@ -160,7 +217,6 @@ const Community = () => {
     const previousData = communityData;
 
     try {
-      // Optimistic UI update
       setIsJoined(!isJoined);
 
       if (isJoined) {
@@ -180,14 +236,197 @@ const Community = () => {
       }
     } catch (err) {
       console.error("Error joining/leaving community:", err);
-      // Revert on error
       setIsJoined(previousState);
       setCommunityData(previousData);
       alert("Failed to update membership.");
     }
   };
 
-  // Get MIME type from file extension
+  // STUDY ROOM FUNCTIONS
+
+  // Internal function to join room
+  const joinRoom = async (roomId) => {
+    try {
+      await api.post("/study-rooms/join", {
+        study_room_id: roomId,
+      });
+
+      setIsInStudyRoom(true);
+    } catch (err) {
+      console.error("Error joining study room:", err);
+
+      if (err.response?.status === 422) {
+        alert("Invalid study room. Please try again.");
+      } else {
+        alert("Failed to join study room.");
+      }
+      throw err;
+    }
+  };
+
+  const handleOpenStudyRoom = async () => {
+    if (!isJoined) {
+      alert("Please join the community first to access the study room.");
+      return;
+    }
+
+    setStudyRoomLoading(true);
+    try {
+      // Check if study room already exists
+      if (!communityData?.study_room_id) {
+        alert("No study room configured for this community yet.");
+        setStudyRoomLoading(false);
+        return;
+      }
+
+      // Join the room first
+      await api.post("/study-rooms/join", {
+        study_room_id: communityData.study_room_id,
+      });
+
+      // Then set the state - this will trigger the useEffect to start polling
+      setStudyRoomData({ id: communityData.study_room_id });
+      setIsInStudyRoom(true);
+      setShowStudyRoom(true);
+    } catch (err) {
+      console.error("Error opening study room:", err);
+
+      if (err.response?.status === 422) {
+        const errors = err.response?.data?.errors;
+        const errorMessage = errors
+          ? Object.values(errors).flat().join(", ")
+          : "Invalid study room";
+        alert(`Validation error: ${errorMessage}`);
+      } else if (err.response?.status === 404) {
+        alert("Study room not found. It may have been deleted.");
+      } else {
+        alert("Failed to open study room. Please try again.");
+      }
+
+      // Reset state on error
+      setShowStudyRoom(false);
+      setStudyRoomData(null);
+      setIsInStudyRoom(false);
+    } finally {
+      setStudyRoomLoading(false);
+    }
+  };
+
+  // Leave study room
+  const handleLeaveStudyRoom = async () => {
+    try {
+      await api.post("/study-rooms/leave", {
+        study_room_id: studyRoomData?.id,
+      });
+
+      setIsInStudyRoom(false);
+      setShowStudyRoom(false);
+      setStudyRoomMessages([]);
+      setStudyRoomMembers([]);
+
+      // Clear intervals
+      if (messagePollingInterval.current) {
+        clearInterval(messagePollingInterval.current);
+      }
+      if (heartbeatInterval.current) {
+        clearInterval(heartbeatInterval.current);
+      }
+    } catch (err) {
+      console.error("Error leaving study room:", err);
+      alert("Failed to leave study room.");
+    }
+  };
+
+  // Send heartbeat to keep user "online"
+  const sendHeartbeat = async () => {
+    if (!studyRoomData?.id) return;
+
+    try {
+      await api.post("/study-rooms/heartbeat", {
+        study_room_id: studyRoomData.id,
+      });
+    } catch (err) {
+      console.error("Error sending heartbeat:", err);
+      // Don't alert user, just log it
+    }
+  };
+
+  // Fetch study room messages
+  const fetchStudyRoomMessages = async () => {
+    if (!studyRoomData?.id) return;
+
+    try {
+      const response = await api.get("/study-rooms/messages", {
+        params: { study_room_id: studyRoomData.id },
+      });
+
+      const messages = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || response.data?.messages || [];
+
+      setStudyRoomMessages(messages);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  };
+
+  // Fetch study room members
+  const fetchStudyRoomMembers = async () => {
+    if (!studyRoomData?.id) return;
+
+    try {
+      const response = await api.get("/study-rooms/members", {
+        params: { study_room_id: studyRoomData.id },
+      });
+
+      const members = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || response.data?.members || [];
+
+      setStudyRoomMembers(members);
+    } catch (err) {
+      console.error("Error fetching members:", err);
+    }
+  };
+
+  // Send message in study room
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    if (!newMessage.trim()) return;
+
+    const messageToSend = newMessage.trim();
+    setNewMessage(""); // Clear input immediately
+
+    try {
+      const response = await api.post("/study-rooms/message", {
+        study_room_id: studyRoomData?.id,
+        message: messageToSend,
+      });
+
+      // Optimistically add the message
+      if (response.data) {
+        setStudyRoomMessages((prev) => [...prev, response.data]);
+      }
+
+      // Fetch all messages to ensure sync
+      await fetchStudyRoomMessages();
+    } catch (err) {
+      console.error("Error sending message:", err);
+
+      if (err.response?.status === 422) {
+        const errors = err.response.data.errors;
+        const errorMessage = Object.values(errors).flat().join(", ");
+        alert(`Cannot send message: ${errorMessage}`);
+      } else {
+        alert("Failed to send message.");
+      }
+
+      setNewMessage(messageToSend); // Restore message on error
+    }
+  };
+
+  // File handling functions
   const getMimeTypeFromExtension = (filename) => {
     const ext = filename.split(".").pop().toLowerCase();
     const mimeMap = {
@@ -208,7 +447,6 @@ const Community = () => {
     return mimeMap[ext] || null;
   };
 
-  // Convert ArrayBuffer to base64 using btoa
   const arrayBufferToBase64 = (buffer) => {
     let binary = "";
     const bytes = new Uint8Array(buffer);
@@ -219,7 +457,6 @@ const Community = () => {
     return btoa(binary);
   };
 
-  // Convert file to base64 using ArrayBuffer for proper encoding
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -227,12 +464,10 @@ const Community = () => {
         const arrayBuffer = reader.result;
         const base64Data = arrayBufferToBase64(arrayBuffer);
 
-        // Get MIME type from extension, fallback to file.type
         const mimeFromExt = getMimeTypeFromExtension(file.name);
         const finalMime =
           mimeFromExt || file.type || "application/octet-stream";
 
-        // Construct data URL with correct MIME type
         const dataUrl = `data:${finalMime};base64,${base64Data}`;
 
         resolve(dataUrl);
@@ -241,14 +476,12 @@ const Community = () => {
       reader.readAsArrayBuffer(file);
     });
 
-  // Handle file selection
   const handleFilesSelected = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    // Optional limits
     const MAX_FILES = 5;
-    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB per file
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 
     const existingCount = newPost.attachments.length;
     if (existingCount + files.length > MAX_FILES) {
@@ -259,7 +492,6 @@ const Community = () => {
     const converted = [];
 
     for (const file of files) {
-      // Validate based on file extension, not browser-detected MIME type
       const ext = file.name.split(".").pop().toLowerCase();
       const allowedExtensions = [
         "jpg",
@@ -267,15 +499,15 @@ const Community = () => {
         "png",
         "gif",
         "webp",
-        "svg", // images
-        "pdf", // PDF
+        "svg",
+        "pdf",
         "doc",
-        "docx", // Word
+        "docx",
         "xls",
-        "xlsx", // Excel
+        "xlsx",
         "ppt",
-        "pptx", // PowerPoint
-        "txt", // Text
+        "pptx",
+        "txt",
       ];
 
       if (!allowedExtensions.includes(ext)) {
@@ -290,7 +522,6 @@ const Community = () => {
 
       try {
         const base64 = await fileToBase64(file);
-        console.log(base64);
         converted.push({ base64, name: file.name, type: file.type });
       } catch (err) {
         console.error("Failed converting file:", err);
@@ -304,11 +535,9 @@ const Community = () => {
       }));
     }
 
-    // reset input so same file can be selected again if needed
     e.target.value = "";
   };
 
-  // Remove attachment by index
   const removeAttachment = (index) => {
     setNewPost((prev) => {
       const copy = [...prev.attachments];
@@ -339,7 +568,6 @@ const Community = () => {
 
       const response = await api.post("/posts", payload);
 
-      // Normalize the new post data to match our structure
       const createdPost = response.data;
       const normalizedNewPost = {
         id: createdPost.id,
@@ -408,7 +636,6 @@ const Community = () => {
       </div>
     );
   }
-
   // Main render
   return (
     <Layout>
@@ -444,6 +671,18 @@ const Community = () => {
                 {isJoined ? "✓ Joined" : "+ Join"}
               </button>
               <button
+                className="study-room-button"
+                onClick={handleOpenStudyRoom}
+                disabled={!isJoined || studyRoomLoading}
+                title={
+                  !isJoined
+                    ? "Join the community to access study room"
+                    : "Open study room"
+                }
+              >
+                {studyRoomLoading ? "Loading..." : "📚 Study Room"}
+              </button>
+              <button
                 className="create-post-button"
                 onClick={() => setIsModalOpen(true)}
                 disabled={!isJoined}
@@ -463,7 +702,6 @@ const Community = () => {
         <div className="community-content">
           {/* Left Section - Posts */}
           <div className="posts-section">
-            {/* Posts List */}
             <div className="posts-list">
               {loading && posts.length === 0 ? (
                 <div className="no-posts">
@@ -538,6 +776,124 @@ const Community = () => {
           </aside>
         </div>
 
+        {/* Study Room Modal */}
+        {showStudyRoom && (
+          <div className="modal-overlay" onClick={handleLeaveStudyRoom}>
+            <div
+              className="modal-content study-room-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h2>📚 Study Room - {communityData?.name}</h2>
+                <button className="close-modal" onClick={handleLeaveStudyRoom}>
+                  ✕
+                </button>
+              </div>
+
+              <div className="study-room-container">
+                {/* Members Sidebar */}
+                <div className="study-room-members">
+                  <h3>
+                    Members Online (
+                    {studyRoomMembers.filter((m) => m.online).length}/
+                    {studyRoomMembers.length})
+                  </h3>
+                  <div className="members-list">
+                    {studyRoomMembers.length === 0 ? (
+                      <div className="no-members">
+                        <p>No members online</p>
+                      </div>
+                    ) : (
+                      studyRoomMembers.map((member) => (
+                        <div
+                          key={member.user_id}
+                          className={`member-item ${
+                            member.online ? "online" : "offline"
+                          }`}
+                        >
+                          <div className="member-avatar">
+                            {member.name?.[0] || "?"}
+                            {member.online && (
+                              <span className="online-indicator"></span>
+                            )}
+                          </div>
+                          <span className="member-name">{member.name}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Chat Area */}
+                <div className="study-room-chat">
+                  <div className="messages-container">
+                    {studyRoomMessages.length === 0 ? (
+                      <div className="no-messages">
+                        <p>No messages yet. Start the conversation!</p>
+                      </div>
+                    ) : (
+                      studyRoomMessages.map((msg) => (
+                        <div key={msg.id} className="message-item">
+                          <div className="message-avatar">
+                            {msg.user?.name?.[0] || "?"}
+                          </div>
+                          <div className="message-content">
+                            <div className="message-header">
+                              <span className="message-author">
+                                {msg.user?.name || "Anonymous"}
+                              </span>
+                              <span className="message-time">
+                                {msg.created_at
+                                  ? new Date(msg.created_at).toLocaleTimeString(
+                                      [],
+                                      {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )
+                                  : ""}
+                              </span>
+                            </div>
+                            <p className="message-text">{msg.message}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Message Input */}
+                  <form
+                    onSubmit={handleSendMessage}
+                    className="message-input-form"
+                  >
+                    <input
+                      type="text"
+                      placeholder={
+                        isInStudyRoom
+                          ? "Type a message..."
+                          : "Join the study room to send messages"
+                      }
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="message-input"
+                      disabled={!isInStudyRoom}
+                      maxLength={2000}
+                    />
+                    <button
+                      type="submit"
+                      className="send-message-btn"
+                      disabled={!isInStudyRoom || !newMessage.trim()}
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Create Post Modal */}
         {isModalOpen && (
           <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
@@ -580,7 +936,6 @@ const Community = () => {
                   />
                 </div>
 
-                {/* Attachments section */}
                 <div className="form-group attachments-section">
                   <label className="attachments-label">Attachments</label>
                   <input
@@ -592,7 +947,6 @@ const Community = () => {
                   />
                   <div className="attachments-preview">
                     {newPost.attachments.map((att, idx) => {
-                      // Check if it's an image by looking at the base64 prefix
                       const isImage = att.base64.startsWith("data:image/");
 
                       return (
