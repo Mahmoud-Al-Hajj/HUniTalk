@@ -7,6 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostsController;
 use App\Http\Controllers\CommunitiesController;
 use App\Http\Controllers\CommentsController;
+use App\Http\Controllers\StudyRoomController;
 use App\Services\UserService;
 use \App\Models\User;
 
@@ -44,12 +45,20 @@ Route::group(["middleware" => "auth:api"], function () {
     Route::put('/user/profile', [UserService::class, 'UpdateUserProfile']);
     Route::put('/user/reputation', [UserService::class, 'calculateUserReputation']);
 
+//Study Rooms
+Route::post('/study-rooms/join', [StudyRoomController::class, 'joinRoom']);
+Route::post('/study-rooms/leave', [StudyRoomController::class, 'leaveRoom']);
+Route::post('/study-rooms/message', [StudyRoomController::class, 'sendMessage']);
+Route::get('/study-rooms/messages', [StudyRoomController::class, 'getMessages']);
+Route::get('/study-rooms/members', [StudyRoomController::class, 'getMembers']);
 
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/ai/ask', [AiController::class, 'message']);
+
+Route::post('/logout', [AuthController::class, 'logout']);
+Route::post('/ai/ask', [AiController::class, 'message']);
 
 });
 
+Route::post('/study-rooms', [StudyRoomController::class, 'getOrCreateRoom']);
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);

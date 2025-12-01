@@ -16,6 +16,10 @@ class Community extends Model
     {
         return $this->belongsToMany(User::class, 'communities_follows', 'community_id', 'user_id');
     }
+    public function studyRooms()
+    {
+        return $this->hasOne(StudyRoom::class, 'community_id');
+    }
 
 
 

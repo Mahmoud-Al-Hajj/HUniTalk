@@ -26,18 +26,18 @@ class CommunitiesService{
                     ->exists();
             });
         }
-
         return $communities;
     }
+
     public static function GetCommunityById($id, $user_id = null){
-        $community = Community::with(['posts', 'followers'])->findOrFail($id);
+        $community = Community::with(['posts', 'followers','studyRooms'])->findOrFail($id);
 
         if ($user_id) {
             $community->is_following = CommunitiesFollow::where('user_id', $user_id)
                 ->where('community_id', $community->id)
                 ->exists();
         }
-
+        $community->study_room_id = $community->studyRoom ? $community->studyRoom->id : null;
         return $community;
     }
     public static function UpdateCommunity($id, $request){
