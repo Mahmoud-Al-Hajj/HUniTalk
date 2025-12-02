@@ -5,12 +5,13 @@ import PostCard from "../components/PostCard";
 import api from "../api/axios";
 import useVoting from "../hooks/useVoting";
 import "../styles/Community.css";
+import Echo from "../utils/echo";
 
 const Community = () => {
   const { communityId } = useParams();
   const navigate = useNavigate();
   const currentUserID = JSON.parse(localStorage.getItem("userId"));
-  // State management
+
   const [communityData, setCommunityData] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,33 +90,79 @@ const Community = () => {
   }, [studyRoomMessages]);
 
   // Poll for new messages and send heartbeat when in study room
+  // Replace the polling useEffect with Pusher real-time updates
   useEffect(() => {
-    if (isInStudyRoom && studyRoomData) {
-      // Fetch messages immediately
+    if (isInStudyRoom && studyRoomData?.id) {
+      // Fetch initial data
       fetchStudyRoomMessages();
       fetchStudyRoomMembers();
 
-      // Poll for messages every 5 seconds
-      messagePollingInterval.current = setInterval(() => {
-        fetchStudyRoomMessages();
-        fetchStudyRoomMembers();
-      }, 3000);
+      // Subscribe to the study room channel
+      const channel = Echo.private(`study-room.${studyRoomData.id}`);
+
+      // Listen for new messages
+      channel.listen("MessageSent", (data) => {
+        console.log("New message received:", data);
+
+        // Add the new message to state
+        setStudyRoomMessages((prev) => {
+          // Check if message already exists (prevent duplicates)
+          const exists = prev.some((msg) => msg.id === data.message.id);
+          if (exists) return prev;
+
+          return [...prev, data.message];
+        });
+
+        // Scroll to bottom
+        scrollToBottom();
+      });
+
+      // Listen for member joined
+      channel.listen("MemberJoined", (data) => {
+        console.log("Member joined:", data);
+        fetchStudyRoomMembers(); // Refresh member list
+      });
+
+      // Listen for member left
+      channel.listen("MemberLeft", (data) => {
+        console.log("Member left:", data);
+        fetchStudyRoomMembers(); // Refresh member list
+      });
+
+      // Optional: Listen for user activity updates
+      channel.listen("UserActivity", (data) => {
+        console.log("User activity:", data);
+        // Update specific member's online status
+        setStudyRoomMembers((prev) =>
+          prev.map((member) =>
+            member.user_id === data.user_id
+              ? {
+                  ...member,
+                  online: data.online,
+                  last_active_at: data.last_active_at,
+                }
+              : member
+          )
+        );
+      });
 
       // Send heartbeat every 60 seconds to stay "online"
-      heartbeatInterval.current = setInterval(() => {
+      const heartbeatTimer = setInterval(() => {
         sendHeartbeat();
-      }, 50000);
+      }, 60000);
 
+      // Cleanup function
       return () => {
-        if (messagePollingInterval.current) {
-          clearInterval(messagePollingInterval.current);
-        }
-        if (heartbeatInterval.current) {
-          clearInterval(heartbeatInterval.current);
-        }
+        console.log("Leaving study room channel");
+        channel.stopListening("MessageSent");
+        channel.stopListening("MemberJoined");
+        channel.stopListening("MemberLeft");
+        channel.stopListening("UserActivity");
+        Echo.leave(`study-room.${studyRoomData.id}`);
+        clearInterval(heartbeatTimer);
       };
     }
-  }, [isInStudyRoom, studyRoomData]);
+  }, [isInStudyRoom, studyRoomData?.id]);
 
   // Backend Integration - Fetch Community Data
   const fetchCommunityData = async () => {
