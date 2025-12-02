@@ -10,7 +10,7 @@ import Echo from "../utils/echo";
 const Community = () => {
   const { communityId } = useParams();
   const navigate = useNavigate();
-  const currentUserID = JSON.parse(localStorage.getItem("userId"));
+  const currentUserID = localStorage.getItem("userId");
 
   const [communityData, setCommunityData] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -879,32 +879,41 @@ const Community = () => {
                         <p>No messages yet. Start the conversation!</p>
                       </div>
                     ) : (
-                      studyRoomMessages.map((msg) => (
-                        <div key={msg.id} className="message-item">
-                          <div className="message-avatar">
-                            {msg.user?.name?.[0] || "?"}
-                          </div>
-                          <div className="message-content">
-                            <div className="message-header">
-                              <span className="message-author">
-                                {msg.user?.name || "Anonymous"}
-                              </span>
-                              <span className="message-time">
-                                {msg.created_at
-                                  ? new Date(msg.created_at).toLocaleTimeString(
-                                      [],
-                                      {
+                      studyRoomMessages.map((msg) => {
+                        const currentUserId = localStorage.getItem("user_id");
+                        const isOwnMessage =
+                          String(msg.user?.id) === String(currentUserId);
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`message-item ${
+                              isOwnMessage ? "own-message" : ""
+                            }`}
+                          >
+                            <div className="message-avatar">
+                              {msg.user?.name?.[0] || "?"}
+                            </div>
+                            <div className="message-content">
+                              <div className="message-header">
+                                <span className="message-author">
+                                  {msg.user?.name || "Anonymous"}
+                                </span>
+                                <span className="message-time">
+                                  {msg.created_at
+                                    ? new Date(
+                                        msg.created_at
+                                      ).toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
-                                      }
-                                    )
-                                  : ""}
-                              </span>
+                                      })
+                                    : ""}
+                                </span>
+                              </div>
+                              <p className="message-text">{msg.message}</p>
                             </div>
-                            <p className="message-text">{msg.message}</p>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                     <div ref={messagesEndRef} />
                   </div>

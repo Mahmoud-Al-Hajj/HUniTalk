@@ -36,6 +36,7 @@ function Login() {
 
       if ((response.status === 200 || response.status === 201) && token) {
         localStorage.setItem("token", token);
+        localStorage.setItem("user_id", String(response.data.id));
 
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
