@@ -141,7 +141,11 @@ function Login() {
           </div>
 
           {/* Submit Button */}
-          <button type="button" className="submit-btn" onClick={handleSubmit}>
+          <button
+            type="button"
+            className="login-submit-btn"
+            onClick={handleSubmit}
+          >
             Login
           </button>
 

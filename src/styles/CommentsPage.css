@@ -320,7 +320,7 @@ body {
   width: 100%;
   min-height: 120px;
   padding: 16px;
-  padding-bottom: 60px;
+  padding-bottom: 50px;
   background: transparent;
   border: none;
   color: var(--color-text-secondary);
@@ -337,11 +337,22 @@ body {
 
 .comment-input-actions {
   position: absolute;
-  bottom: 12px;
+  bottom: 8px;
   right: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 12px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.comment-submit-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
 .comment-more-btn {
@@ -361,51 +372,6 @@ body {
 .comment-more-btn:hover {
   background: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
-}
-
-.comment-cancel-btn {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: var(--font-family-base);
-}
-
-.comment-cancel-btn:hover {
-  background: var(--color-bg-tertiary);
-}
-
-.comment-cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.comment-submit-btn {
-  padding: 8px 20px;
-  background: #0079d3;
-  border: none;
-  border-radius: 20px;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  font-family: var(--font-family-base);
-}
-
-.comment-submit-btn:hover {
-  background: #1484d6;
-}
-
-.comment-submit-btn:disabled {
-  background: #0079d3;
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ============================================
@@ -577,8 +543,12 @@ body {
   border: none;
   line-height: 1.2;
   min-height: 36px;
+  height: 36px;
   white-space: nowrap;
   font-family: var(--font-family-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cancel-btn {
@@ -600,6 +570,7 @@ body {
   background: var(--color-accent-primary);
   color: var(--color-text-primary);
   box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  white-space: nowrap;
 }
 
 .submit-btn:hover:not(:disabled) {

@@ -127,7 +127,7 @@
   margin: 3px 0;
 }
 
-.submit-btn {
+.login-submit-btn {
   width: 100%;
   background: linear-gradient(135deg, #4b5563 0%, #3f4757 100%);
   color: #ffffff;
@@ -142,7 +142,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.submit-btn:hover {
+.login-submit-btn:hover {
   background: linear-gradient(135deg, #5a6573 0%, #4a5464 100%);
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);

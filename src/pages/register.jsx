@@ -158,7 +158,7 @@ function Register() {
           </div>
 
           {/* Submit Button */}
-          <button type="submit" className="submit-btn">
+          <button type="submit" className="login-submit-btn">
             Create account
           </button>
 

@@ -613,7 +613,7 @@ const CommentsPage = () => {
                   <button
                     type="button"
                     onClick={handleCancelComment}
-                    className="comment-cancel-btn"
+                    className="cancel-btn"
                   >
                     Cancel
                   </button>
