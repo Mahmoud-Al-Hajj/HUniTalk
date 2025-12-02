@@ -43,4 +43,14 @@ class StudyRoomController extends Controller{
         $members = StudyRoomService::getMembers($roomId);
         return response()->json($members, 200);
     }
+    public function heartbeat(Request $request)
+    {
+        $validated = $request->validate([
+            'study_room_id' => 'required|exists:study_rooms,id',
+        ]);
+
+        StudyRoomService::updateActivity($validated['study_room_id']);
+
+        return response()->json(['status' => 'active'], 200);
+    }
 }

@@ -68,11 +68,8 @@ class StudyRoomService{
         $msg->message = $message;
         $msg->save();
 
-    $msg->load('user');
-
-
     event(new \App\Events\MessageSent($msg));
-    return $msg;
+    return $msg->load('user');
     }
 public static function getMessages($roomId){
     $messages = StudyRoomMessage::where('study_room_id', $roomId)
@@ -108,6 +105,12 @@ public static function getMessages($roomId){
         return $members;
     }
 
+ public static function updateActivity($roomId): void
+    {
+        StudyRoomMember::where('study_room_id', $roomId)
+            ->where('user_id', Auth::id())
+            ->update(['last_active_at' => now()]);
+    }
     // get notes
     // public function getNotes(int $roomId): string{
     //     $room = StudyRoom::findOrFail($roomId);

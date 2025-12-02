@@ -51,6 +51,7 @@ Route::post('/study-rooms/leave', [StudyRoomController::class, 'leaveRoom']);
 Route::post('/study-rooms/message', [StudyRoomController::class, 'sendMessage']);
 Route::get('/study-rooms/messages', [StudyRoomController::class, 'getMessages']);
 Route::get('/study-rooms/members', [StudyRoomController::class, 'getMembers']);
+Route::post('/study-rooms/heartbeat', [StudyRoomController::class, 'heartbeat']);
 
 
 Route::post('/logout', [AuthController::class, 'logout']);
