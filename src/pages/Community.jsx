@@ -97,11 +97,14 @@ const Community = () => {
       fetchStudyRoomMessages();
       fetchStudyRoomMembers();
 
-      // Subscribe to the study room channel
       const channel = Echo.private(`study-room.${studyRoomData.id}`);
+      console.log("Subscribed to channel: study-room." + studyRoomData.id);
+      console.log("Echo object:", window.Echo);
+      console.log("Pusher object:", window.Echo.connector?.pusher);
+      console.log("Channel object:", channel);
 
       // Listen for new messages
-      channel.listen("MessageSent", (data) => {
+      channel.on("MessageSent", (data) => {
         console.log("New message received:", data);
 
         // Add the new message to state
@@ -446,15 +449,10 @@ const Community = () => {
     setNewMessage(""); // Clear input immediately
 
     try {
-      const response = await api.post("/study-rooms/message", {
+      await api.post("/study-rooms/message", {
         study_room_id: studyRoomData?.id,
         message: messageToSend,
       });
-
-      // Optimistically add the message
-      if (response.data) {
-        setStudyRoomMessages((prev) => [...prev, response.data]);
-      }
 
       // Fetch all messages to ensure sync
       await fetchStudyRoomMessages();
