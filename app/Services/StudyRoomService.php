@@ -8,7 +8,7 @@ use App\Models\StudyRoomMessage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\Log;
 
 class StudyRoomService{
 
@@ -68,8 +68,14 @@ class StudyRoomService{
         $msg->message = $message;
         $msg->save();
 
-    event(new \App\Events\MessageSent($msg));
-    return $msg->load('user');
+        Log::info('Broadcasting message', [
+            'room_id' => $roomId,
+            'message_id' => $msg->id,
+            'user_id' => $userId
+        ]);
+
+        broadcast(new \App\Events\MessageSent($msg))->toOthers();
+        return $msg->load('user');
     }
 public static function getMessages($roomId){
     $messages = StudyRoomMessage::where('study_room_id', $roomId)

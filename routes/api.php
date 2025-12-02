@@ -3,6 +3,7 @@
 use App\Http\Controllers\AiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostsController;
 use App\Http\Controllers\CommunitiesController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\StudyRoomController;
 use App\Services\UserService;
 use \App\Models\User;
 
+// Broadcasting authentication
+Broadcast::routes(['middleware' => ['auth:api']]);
 
 Route::group(["middleware" => "auth:api"], function () {
 
