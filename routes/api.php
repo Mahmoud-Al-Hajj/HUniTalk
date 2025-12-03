@@ -93,10 +93,5 @@ Route::get('/test', function() {
     return response()->json(['status' => 'ok']);
 });
 
-// Health check endpoint for Railway
-Route::get('/health', function() {
-    return response()->json(['status' => 'healthy', 'timestamp' => now()]);
-});
-
 //only us devs
 Route::post('/communities', [CommunitiesController::class, 'createCommunity']);
