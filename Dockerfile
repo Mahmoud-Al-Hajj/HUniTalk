@@ -52,5 +52,13 @@ RUN mkdir -p storage/logs \
     && mkdir -p storage/framework/views \
     && mkdir -p storage/framework/cache
 
+# Clear any cached config
+RUN php artisan config:clear || true \
+    && php artisan route:clear || true \
+    && php artisan view:clear || true
+
+# Verify Laravel is working
+RUN php artisan --version
+
 # Start Laravel
 CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
