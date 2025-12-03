@@ -72,7 +72,6 @@ function Login() {
 
   return (
     <div className="page-wrapper">
-      <DarkVeil />
       <div className="card-container">
         <h1 className="card-title"> Welcome Back !</h1>
 
