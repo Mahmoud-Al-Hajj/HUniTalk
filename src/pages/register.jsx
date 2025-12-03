@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
@@ -163,7 +163,7 @@ function Register() {
 
           {/* Sign in Link */}
           <p className="sign_up">
-            Already have an account? <a href="./login">Sign in</a>
+            Already have an account? <Link to="/login">Sign in</Link>
           </p>
         </form>
       </div>

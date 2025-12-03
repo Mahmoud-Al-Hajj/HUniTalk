@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import DarkVeil from "../components/DarkVeil";
 import "../styles/login.css";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +50,7 @@ function Login() {
         }
 
         console.log("Login successful, navigating to home...");
-        window.location.href = "/home";
+        navigate("/home");
       } else {
         console.warn("Login response missing token:", response.data);
       }
@@ -150,7 +152,7 @@ function Login() {
 
           {/* Sign up Link */}
           <p className="sign_up">
-            Don't have an account? <a href="./register">Sign up</a>
+            Don't have an account? <Link to="/register">Sign up</Link>
           </p>
         </form>
       </div>

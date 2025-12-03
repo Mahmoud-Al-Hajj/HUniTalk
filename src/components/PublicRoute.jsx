@@ -2,11 +2,10 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 
 function PublicRoute({ children }) {
-  const user = JSON.parse(localStorage.getItem("user"));
   const token = localStorage.getItem("token");
 
-  if (token && user?.email_verified) {
-    // Already logged in and email verified
+  if (token) {
+    // Already logged in, redirect to home
     return <Navigate to="/home" replace />;
   }
   return children;
