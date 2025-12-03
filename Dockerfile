@@ -66,4 +66,4 @@ RUN mkdir -p storage/logs \
 RUN php artisan --version
 
 # Start Laravel with optimizations
-CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan storage:link  &&php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
