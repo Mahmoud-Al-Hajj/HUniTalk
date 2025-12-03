@@ -12,15 +12,6 @@ use App\Http\Controllers\StudyRoomController;
 use App\Services\UserService;
 use \App\Models\User;
 
-// CORS middleware
-Route::middleware(function ($request, $next) {
-    $response = $next($request);
-    $response->headers->set('Access-Control-Allow-Origin', 'https://h-uni-talk.vercel.app');
-    $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    return $response;
-})->group(function () {
-
 // Broadcasting authentication
 Broadcast::routes(['middleware' => ['auth:api']]);
 
@@ -57,17 +48,16 @@ Route::group(["middleware" => "auth:api"], function () {
     Route::put('/user/profile', [UserService::class, 'UpdateUserProfile']);
     Route::put('/user/reputation', [UserService::class, 'calculateUserReputation']);
 
-//Study Rooms
-Route::post('/study-rooms/join', [StudyRoomController::class, 'joinRoom']);
-Route::post('/study-rooms/leave', [StudyRoomController::class, 'leaveRoom']);
-Route::post('/study-rooms/message', [StudyRoomController::class, 'sendMessage']);
-Route::get('/study-rooms/messages', [StudyRoomController::class, 'getMessages']);
-Route::get('/study-rooms/members', [StudyRoomController::class, 'getMembers']);
-Route::post('/study-rooms/heartbeat', [StudyRoomController::class, 'heartbeat']);
+    //Study Rooms
+    Route::post('/study-rooms/join', [StudyRoomController::class, 'joinRoom']);
+    Route::post('/study-rooms/leave', [StudyRoomController::class, 'leaveRoom']);
+    Route::post('/study-rooms/message', [StudyRoomController::class, 'sendMessage']);
+    Route::get('/study-rooms/messages', [StudyRoomController::class, 'getMessages']);
+    Route::get('/study-rooms/members', [StudyRoomController::class, 'getMembers']);
+    Route::post('/study-rooms/heartbeat', [StudyRoomController::class, 'heartbeat']);
 
-
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::post('/ai/ask', [AiController::class, 'message']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/ai/ask', [AiController::class, 'message']);
 
 });
 
@@ -104,5 +94,3 @@ Route::get('/test', function() {
 
 //only us devs
 Route::post('/communities', [CommunitiesController::class, 'createCommunity']);
-
-}); // End CORS middleware group
