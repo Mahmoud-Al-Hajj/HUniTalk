@@ -528,14 +528,6 @@ const CommentsPage = () => {
                       <button
                         type="button"
                         className="attachment-action-btn"
-                        onClick={() => openInViewer(idx, attachments)}
-                        title="Open full size"
-                      >
-                        <Maximize2 size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="attachment-action-btn"
                         onClick={() => {
                           const a = document.createElement("a");
                           a.href = url;
