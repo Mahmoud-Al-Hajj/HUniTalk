@@ -89,6 +89,9 @@ Route::post('/resend-verification', function (Request $request) {
     return response()->json(['message' => 'Verification link sent']);
 })->middleware('auth:api');
 
+Route::get('/test', function() {
+    return response()->json(['status' => 'ok']);
+});
 
 //only us devs
 Route::post('/communities', [CommunitiesController::class, 'createCommunity']);
