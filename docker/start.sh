@@ -21,14 +21,10 @@ chown -R www-data:www-data /var/www/html/storage
 chmod -R 775 /var/www/html/storage
 chmod -R 775 /var/www/html/bootstrap/cache
 
-# Clear and cache config for production
-php artisan config:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Run migrations (optional - uncomment if you want auto-migrations)
-# php artisan migrate --force
+# Clear config cache (don't cache during startup - DB might not be ready)
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
 
 # Create storage link
 php artisan storage:link --force || true
