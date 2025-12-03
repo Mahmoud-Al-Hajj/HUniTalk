@@ -12,7 +12,7 @@ RUN apk add --no-cache \
     oniguruma-dev \
     icu-dev
 
-# Install PHP extensions
+# Install PHP extensions including OPcache for performance
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
     pdo \
@@ -23,7 +23,17 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     bcmath \
     gd \
     zip \
-    intl
+    intl \
+    opcache
+
+# Configure OPcache for production
+RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.max_accelerated_files=4000" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.save_comments=1" >> /usr/local/etc/php/conf.d/opcache.ini \
+    && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -52,13 +62,8 @@ RUN mkdir -p storage/logs \
     && mkdir -p storage/framework/views \
     && mkdir -p storage/framework/cache
 
-# Clear any cached config
-RUN php artisan config:clear || true \
-    && php artisan route:clear || true \
-    && php artisan view:clear || true
-
 # Verify Laravel is working
 RUN php artisan --version
 
-# Start Laravel (run migrations then start server)
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+# Start Laravel with optimizations
+CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
