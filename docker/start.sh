@@ -4,9 +4,8 @@ set -e
 # Set default PORT if not provided
 export PORT=${PORT:-8080}
 
-# Substitute environment variables in nginx config
-envsubst '${PORT}' < /etc/nginx/http.d/default.conf > /etc/nginx/http.d/default.conf.tmp
-mv /etc/nginx/http.d/default.conf.tmp /etc/nginx/http.d/default.conf
+# Substitute PORT in nginx config using sed (safer than envsubst)
+sed -i "s/NGINX_PORT/${PORT}/g" /etc/nginx/http.d/default.conf
 
 # Create storage directories if they don't exist
 mkdir -p /var/www/html/storage/logs

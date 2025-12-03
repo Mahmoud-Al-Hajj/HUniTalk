@@ -32,8 +32,7 @@ RUN apk add --no-cache \
     unzip \
     oniguruma-dev \
     icu-dev \
-    mysql-client \
-    gettext
+    mysql-client
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
