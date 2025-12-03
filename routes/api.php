@@ -12,6 +12,15 @@ use App\Http\Controllers\StudyRoomController;
 use App\Services\UserService;
 use \App\Models\User;
 
+// CORS middleware
+Route::middleware(function ($request, $next) {
+    $response = $next($request);
+    $response->headers->set('Access-Control-Allow-Origin', 'https://h-uni-talk.vercel.app');
+    $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return $response;
+})->group(function () {
+
 // Broadcasting authentication
 Broadcast::routes(['middleware' => ['auth:api']]);
 
@@ -95,3 +104,5 @@ Route::get('/test', function() {
 
 //only us devs
 Route::post('/communities', [CommunitiesController::class, 'createCommunity']);
+
+}); // End CORS middleware group
