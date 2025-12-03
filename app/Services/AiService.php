@@ -73,7 +73,7 @@ If sources is empty respond exactly: No relevant posts found.
 Never produce citations or Sources text unless a referenced document is present in sources.
 Do not repeat templates or project proposals not present in retrieved_posts.
 Temperature: 0.0. Keep answers concise and factual.
-
+Answer in this way: The post says that... and the comments mention...
 
         ";
 
