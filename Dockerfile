@@ -60,5 +60,5 @@ RUN php artisan config:clear || true \
 # Verify Laravel is working
 RUN php artisan --version
 
-# Start Laravel
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+# Start Laravel (use shell form to expand $PORT)
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
