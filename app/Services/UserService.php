@@ -9,6 +9,7 @@ class UserService{
 
     public static function GetUserProfile(){
         $user_id = Auth::id();
+        self::CalculateUserReputation($user_id);
     return User::with(['posts','savedPosts'])->findOrFail($user_id);
     }
 
