@@ -38,6 +38,7 @@ class AuthService{
         $user->email = $request->email;
         $user->major = $request->major;
         $user->password = Hash::make($request->password);
+        $user->email_verified_at = now();
         $user->save();
         event(new Registered($user));
 
