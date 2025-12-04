@@ -69,17 +69,30 @@ RESPONSE STYLE:
 - Mention which post or comment the information comes from";
 
         if ($mode === 'summarize' && $context) {
-            $userContent = "Please summarize this discussion thread from HUniTalk.
+            $userContent = "Summarize this HUniTalk discussion thread in a clean, organized format.
 
 THREAD CONTENT:
 {$context}
 
-Provide:
-1. A one-sentence main takeaway
-2. 3-5 key points discussed
-3. Any conclusions or consensus reached
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
-Keep it concise and informative.";
+**MAIN TAKEAWAY**
+[One clear sentence summarizing the core message]
+
+**KEY POINTS**
+• [First key point]
+• [Second key point]
+• [Third key point if relevant]
+• [Fourth key point if relevant]
+• [Fifth key point if relevant]
+
+**DISCUSSION HIGHLIGHTS**
+[2-3 sentences about notable comments or different perspectives shared]
+
+ **CONCLUSION**
+[One sentence on any consensus, resolution, or open questions]
+
+Keep it informative and easy to read. Use the exact formatting above.";
         } else {
             if ($context) {
                 // instruct model to return JSON so parsing is easier
