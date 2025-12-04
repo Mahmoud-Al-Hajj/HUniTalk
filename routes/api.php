@@ -79,7 +79,7 @@ Route::get('/verify-email/{id}/{hash}', function (Request $request, $id, $hash) 
     $user->email_verified_at = now();
     $user->save();
 
-    return redirect('http://localhost:3000/home?verified=1');
+    return redirect('https://h-uni-talk.vercel.app/home?verified=1');
 })->name('verification.verify');
 
 Route::post('/resend-verification', function (Request $request) {
