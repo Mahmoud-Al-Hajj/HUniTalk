@@ -23,6 +23,77 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import DocViewer, { DocViewerRenderers } from "react-doc-viewer";
 
+// Simple markdown renderer for AI summaries
+const renderMarkdown = (text) => {
+  if (!text) return null;
+
+  // Split by lines
+  const lines = text.split("\n");
+  const elements = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="summary-list">
+          {listItems.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+    }
+  };
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+
+    // Bold headers like **MAIN TAKEAWAY**
+    if (
+      trimmed.startsWith("**") &&
+      trimmed.endsWith("**") &&
+      trimmed.length > 4
+    ) {
+      flushList();
+      const headerText = trimmed.slice(2, -2);
+      elements.push(
+        <h4 key={index} className="summary-heading">
+          {headerText}
+        </h4>
+      );
+    }
+    // Bullet points
+    else if (
+      trimmed.startsWith("•") ||
+      trimmed.startsWith("-") ||
+      trimmed.startsWith("*")
+    ) {
+      const bulletText = trimmed.replace(/^[•\-\*]\s*/, "");
+      listItems.push(bulletText);
+    }
+    // Regular paragraph (non-empty)
+    else if (trimmed.length > 0) {
+      flushList();
+      // Handle inline bold **text**
+      const parts = trimmed.split(/(\*\*[^*]+\*\*)/g);
+      const formattedParts = parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+      });
+      elements.push(
+        <p key={index} className="summary-paragraph">
+          {formattedParts}
+        </p>
+      );
+    }
+  });
+
+  flushList();
+  return elements;
+};
+
 const CommentsPage = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
@@ -467,7 +538,7 @@ const CommentsPage = () => {
             {summaryError ? (
               <p style={{ color: "red" }}>{summaryError}</p>
             ) : (
-              <p>{aiSummary}</p>
+              <div className="summary-content">{renderMarkdown(aiSummary)}</div>
             )}
           </div>
         )}
