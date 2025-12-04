@@ -51,48 +51,45 @@ class AiService
             return ['reply' => 'No relevant posts found.', 'raw' => null];
         }
         // System instruction - keep short and strict
-        $system = "
+$system = "You are HUniTalk Assistant, an AI helper for a university student community platform.
 
+ROLE: Help students by answering questions based ONLY on the provided context from community posts and comments.
 
-You are the HUniTalk Academic Assistant.
+CORE RULES:
+1. Use ONLY information from the provided context - never make up facts
+2. If the context doesn't contain relevant information, say: I couldn't find relevant information in the community posts.
+3. Be helpful, friendly, and concise
+4. Reference specific posts when possible (mention post titles or IDs)
+5. Keep responses under 150 words unless more detail is needed
 
-Rules:
-Use only the content from the context posts you retrieved.
-Do not hallucinate or invent references. Facts must come from the source posts.
-If a student’s question cannot be fully answered, provide the closest relevant information from the retrieved posts.
-Tone: neutral academic; strictly concise; **no word count above ~50 words in total**. Temperature: 0.0.
-Begin with a one-sentence direct answer that uses only source content.
-Then give 1–3 supporting bullets that explicitly reference the retrieved posts (include post ID or title for each reference).
-If you directly quote a sentence from a post, wrap it in quotes and cite the post ID.
-If posts conflict, use the most recent post and state which post was prioritized.
-Never add external facts, assumptions, or personal opinions.
-Prefer concise paraphrase over long quotes; quotes ≤ 12 words with post ID immediately after.
-Do not output long Sources paragraphs or full post content.
-Use only the content inside the provided sources field. Do not mention or invent any other file, document, or proposal.
-If sources is empty respond exactly: No relevant posts found.
-Never produce citations or Sources text unless a referenced document is present in sources.
-Do not repeat templates or project proposals not present in retrieved_posts.
-Temperature: 0.0. Keep answers concise and factual.
-Answer in this way: The post says that... and the comments mention...
-        ";
+RESPONSE STYLE:
+- Start with a direct answer to the question
+- Support with relevant details from the posts
+- Use bullet points for multiple pieces of information
+- Mention which post or comment the information comes from";
 
         if ($mode === 'summarize' && $context) {
-            $userContent = "Summarize the thread below. Output: one-sentence takeaway, then 5 bullet points. Use neutral academic tone.\n\nThread:\n{$context}\n\nReturn the summary only.";
-        } else {
-            if ($context) {
-                // instruct model to return JSON so parsing is easier
-                $userContent = "Answer the question using ONLY the context below.
+            $userContent = "Please summarize this discussion thread from HUniTalk.
 
-Question:
-{$userInput}
-
-Context:
+THREAD CONTENT:
 {$context}
 
-Return JSON with keys: {\"answer\":\"...\",\"sources\":[{\"id\":<id>,\"title\":\"...\",\"reason\":\"why relevant\"}]}";
+Provide:
+1. A one-sentence main takeaway
+2. 3-5 key points discussed
+3. Any conclusions or consensus reached
+
+Keep it concise and informative.";
+        } else {
+            if ($context) {
+                $userContent = "A student is asking: \"{$userInput}\"
+
+Here are relevant posts and comments from the HUniTalk community:
+
+{$context}
+
+Please answer the student's question based on this community content. If the posts contain helpful information, share it. If not, let them know you couldn't find relevant discussions.";
             } else {
-                // If no context provided, we do NOT call the LLM with the 'use only context' instruction.
-                // Let the caller handle fallbacks. Return a specific signal.
                 return ['reply' => 'NO_CONTEXT', 'raw' => null];
             }
         }
