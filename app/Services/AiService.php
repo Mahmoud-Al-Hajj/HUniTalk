@@ -98,7 +98,7 @@ Return JSON with keys: {\"answer\":\"...\",\"sources\":[{\"id\":<id>,\"title\":\
         }
 
         // Gemini endpoint shape (existing pattern you used)
-        $link = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . env('GEMINI_API_KEY');
+        $link = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=' . env('GEMINI_API_KEY');
 
         $payload = [
             'systemInstruction' => [
