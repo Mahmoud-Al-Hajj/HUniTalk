@@ -15,11 +15,24 @@ function TopBar({ onCreatePost }) {
         setUserAvatar(savedAvatar);
       }
 
-      // Load user name from localStorage (check both keys)
-      const savedUserName =
+      // Load user name from localStorage (check multiple sources)
+      let name =
         localStorage.getItem("username") || localStorage.getItem("userName");
-      if (savedUserName) {
-        setUserName(savedUserName.charAt(0).toUpperCase());
+
+      // Also try to get from user object
+      if (!name) {
+        try {
+          const userObj = JSON.parse(localStorage.getItem("user"));
+          if (userObj?.name) {
+            name = userObj.name;
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+
+      if (name) {
+        setUserName(name.charAt(0).toUpperCase());
       }
     };
 
