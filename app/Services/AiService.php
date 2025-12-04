@@ -82,14 +82,19 @@ Provide:
 Keep it concise and informative.";
         } else {
             if ($context) {
-                $userContent = "A student is asking: \"{$userInput}\"
+                // instruct model to return JSON so parsing is easier
+                $userContent = "Answer the question using ONLY the context below.
 
-Here are relevant posts and comments from the HUniTalk community:
+Question:
+{$userInput}
 
+Context:
 {$context}
 
-Please answer the student's question based on this community content. If the posts contain helpful information, share it. If not, let them know you couldn't find relevant discussions.";
+Return JSON with keys: {\"answer\":\"...\",\"sources\":[{\"id\":<id>,\"title\":\"...\",\"reason\":\"why relevant\"}]}";
             } else {
+                // If no context provided, we do NOT call the LLM with the 'use only context' instruction.
+                // Let the caller handle fallbacks. Return a specific signal.
                 return ['reply' => 'NO_CONTEXT', 'raw' => null];
             }
         }
