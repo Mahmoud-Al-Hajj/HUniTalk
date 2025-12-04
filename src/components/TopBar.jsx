@@ -15,8 +15,9 @@ function TopBar({ onCreatePost }) {
         setUserAvatar(savedAvatar);
       }
 
-      // Optionally load user name from localStorage or API
-      const savedUserName = localStorage.getItem("userName");
+      // Load user name from localStorage (check both keys)
+      const savedUserName =
+        localStorage.getItem("username") || localStorage.getItem("userName");
       if (savedUserName) {
         setUserName(savedUserName.charAt(0).toUpperCase());
       }
