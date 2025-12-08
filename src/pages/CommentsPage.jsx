@@ -646,9 +646,9 @@ const CommentsPage = () => {
           </button>
 
           <a
-            href="mailto:mah06.hajj@gmail.com?subject=Report%20Post&body=I%20would%20like%20to%20report%20this%20post%20(ID:%20{postId})"
+            href={`mailto:mah06.hajj@gmail.com?subject=Report%20Post%20(ID:%20${postId})&body=I%20would%20like%20to%20report%20this%20post%20(ID:%20${postId})`}
             className="report-btn"
-            title="Report this post"
+            title="Report this post (opens your default email client)"
           >
             Report
           </a>
