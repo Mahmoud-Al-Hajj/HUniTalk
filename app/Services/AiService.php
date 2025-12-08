@@ -104,6 +104,7 @@ Question:
 Context:
 {$context}
 
+Always return sources.
 Return JSON with keys: {\"answer\":\"...\",\"sources\":[{\"id\":<id>,\"title\":\"...\",\"reason\":\"why relevant\"}]}";
             } else {
                 // If no context provided, we do NOT call the LLM with the 'use only context' instruction.
