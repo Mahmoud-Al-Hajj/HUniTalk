@@ -16,10 +16,24 @@ function Chatbot() {
 
   useEffect(() => {
     fetchUserProfile();
+    // Load chat history from localStorage
+    const savedMessages = localStorage.getItem("chatHistory");
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (e) {
+        console.error("Failed to load chat history:", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  // Save chat history to localStorage whenever messages change
+  useEffect(() => {
+    localStorage.setItem("chatHistory", JSON.stringify(messages));
   }, [messages]);
 
   const fetchUserProfile = async () => {
@@ -156,6 +170,14 @@ function Chatbot() {
     await handleSendMessage();
   };
 
+  // Clear chat history
+  const clearChatHistory = () => {
+    if (window.confirm("Are you sure you want to clear the chat history?")) {
+      setMessages([]);
+      localStorage.removeItem("chatHistory");
+    }
+  };
+
   // Render a list of sources under a bot message if present
   const renderSources = (parsed) => {
     if (!parsed) return null;
@@ -217,7 +239,16 @@ function Chatbot() {
   return (
     <Layout>
       <div className="chatbot-header">
-        <h1 className="chatbot-title">HUniTalk Answers</h1>
+        <div className="chatbot-header-top">
+          <h1 className="chatbot-title">HUniTalk Answers</h1>
+          <button
+            className="clear-history-btn"
+            onClick={clearChatHistory}
+            title="Clear chat history"
+          >
+            Clear History
+          </button>
+        </div>
         <p className="chatbot-subtitle">
           Got a question? Ask it and get answers, perspectives, and
           recommendations from all of HUniTalk.
