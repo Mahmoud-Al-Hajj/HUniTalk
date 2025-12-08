@@ -207,6 +207,32 @@ body {
   transform: scale(0.98);
 }
 
+.report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dc2626;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.report-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.report-btn:active {
+  transform: translateY(0);
+}
+
 /* ============================================
    VOTING COMPONENTS
    ============================================ */

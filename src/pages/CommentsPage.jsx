@@ -644,6 +644,14 @@ const CommentsPage = () => {
           <button className="stat-btn">
             <MoreHorizontal size={16} />
           </button>
+
+          <a
+            href="mailto:mah06.hajj@gmail.com?subject=Report%20Post&body=I%20would%20like%20to%20report%20this%20post%20(ID:%20{postId})"
+            className="report-btn"
+            title="Report this post"
+          >
+            Report
+          </a>
         </div>
       </div>
 
