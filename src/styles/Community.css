@@ -1283,9 +1283,8 @@
   line-height: 1.5;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  word-break: break-word;
   white-space: pre-wrap;
-  max-width: 100%;
-  overflow: hidden;
 }
 
 /* Message Input Form */
