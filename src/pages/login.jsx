@@ -74,9 +74,9 @@ function Login() {
 
   return (
     <div className="page-wrapper">
+      <DarkVeil />
       <div className="card-container">
         <h1 className="card-title"> Welcome Back !</h1>
-        <DarkVeil />
         <form>
           {/* Error Messages */}
           {Object.keys(errors).length > 0 && (
