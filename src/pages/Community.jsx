@@ -178,7 +178,7 @@ const Community = () => {
       // Send heartbeat every 60 seconds to stay "online"
       const heartbeatTimer = setInterval(() => {
         sendHeartbeat();
-      }, 60000);
+      }, 5000);
 
       // Cleanup function
       return () => {
