@@ -642,7 +642,7 @@ const CommentsPage = () => {
           </button>
 
           <a
-            href={`mailto:mah06.hajj@gmail.com?subject=Report%20Post%20(ID:%20${postId})&body=I%20would%20like%20to%20report%20this%20post%20(ID:%20${postId}) titled "${post.title}"`}
+            href={`mailto:mah06.hajj@gmail.com?subject=Report%20Post%20(ID:%20${postId})&body=I%20would%20like%20to%20report%20this%20post%20(ID:%20${postId}) titled "${post.title}" for violating the community guidelines.`}
             className="report-btn"
             title="Report this post (opens your default email client)"
           >

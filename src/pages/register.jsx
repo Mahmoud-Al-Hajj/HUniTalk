@@ -80,7 +80,7 @@ function Register() {
     <div className="page-wrapper">
       <div className="card-container">
         <h1 className="card-title">Create an account</h1>
-
+        <DarkVeil />
         <form onSubmit={handleSubmit}>
           {/* Error Messages */}
           {Object.keys(errors).length > 0 && (
