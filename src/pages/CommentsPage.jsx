@@ -111,7 +111,7 @@ const CommentsPage = () => {
   const [viewerDocs, setViewerDocs] = useState([]); // [{ uri, fileName }]
   const [currentViewerIndex, setCurrentViewerIndex] = useState(0);
   const [viewerError, setViewerError] = useState(false);
-  const [viewerType, setViewerType] = useState("microsoft"); // 'microsoft' or 'google'
+  const [viewerType, setViewerType] = useState("microsoft");
   const [officeViewerError, setOfficeViewerError] = useState(false);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
@@ -121,14 +121,13 @@ const CommentsPage = () => {
     "commentVotes"
   );
 
-  // --- AI Summary states ---
   const [aiSummary, setAiSummary] = useState("");
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState(null);
 
   useEffect(() => {
     fetchPostAndComments();
-    // close viewer when post changes
+
     return () => {
       setViewerOpen(false);
       setViewerDocs([]);
@@ -531,7 +530,6 @@ const CommentsPage = () => {
           </button>
         </div>
 
-        {/* --- AI Summary Display --- */}
         {(aiSummary || summaryError) && (
           <div className="ai-summary-box">
             <h3>Summary:</h3>
@@ -543,7 +541,6 @@ const CommentsPage = () => {
           </div>
         )}
 
-        {/* --- Attachments gallery --- */}
         {attachments.length > 0 && (
           <div className="post-attachments">
             {attachments.map((att, idx) => {
@@ -618,7 +615,6 @@ const CommentsPage = () => {
             })}
           </div>
         )}
-        {/* --- end attachments --- */}
 
         <div className="post-stats">
           <div className="vote-section">
