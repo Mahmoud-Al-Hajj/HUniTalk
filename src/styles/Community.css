@@ -1252,6 +1252,7 @@
 }
 
 .message-contents {
+  background-color: #e85d04;
   border-radius: 12px;
   color: #e5e7eb;
   font-size: 15px;
