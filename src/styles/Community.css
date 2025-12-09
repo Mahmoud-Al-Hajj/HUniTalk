@@ -1251,7 +1251,13 @@
   border: 2px solid rgba(255, 138, 0, 0.3);
 }
 
-.message-content {
+.message-contents {
+  border-radius: 12px;
+  color: #e5e7eb;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 65%;
+  padding: 18px 22px;
   flex: 1;
   min-width: 0;
   max-width: 100%;

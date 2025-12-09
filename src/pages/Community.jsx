@@ -891,7 +891,7 @@ const Community = () => {
                             <div className="message-avatar">
                               {msg.user?.name?.[0] || "?"}
                             </div>
-                            <div className="message-content">
+                            <div className="message-contents">
                               <div className="message-header">
                                 <span className="message-author">
                                   {msg.user?.name || "Anonymous"}
