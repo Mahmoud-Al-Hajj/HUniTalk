@@ -1188,7 +1188,6 @@
   display: flex;
   gap: 12px;
   animation: messageSlideIn 0.3s ease-out;
-  border: 1px solid green;
 }
 
 /* Own messages - WhatsApp style */
