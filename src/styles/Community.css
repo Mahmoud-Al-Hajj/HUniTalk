@@ -1252,14 +1252,9 @@
 }
 
 .message-content {
-  background-color: #363848;
-  border: 1px solid #ffffff0d;
-  border-radius: 12px;
-  color: #e5e7eb;
-  font-size: 15px;
-  line-height: 1.6;
+  flex: 1;
+  min-width: 0;
   max-width: 100%;
-  padding: 18px 22px;
 }
 
 .message-header {
