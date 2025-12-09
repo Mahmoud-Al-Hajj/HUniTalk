@@ -479,7 +479,7 @@ function Profile() {
                   ? profile.reputation
                   : 0}
               </div>
-              <div className="stat-label">Karma</div>
+              <div className="stat-label">Reputation</div>
             </div>
             <div className="stat-item">
               <div className="stat-value">{userPosts.length}</div>
