@@ -123,13 +123,39 @@ const Community = () => {
       // Listen for member joined
       channel.listen("MemberJoined", (data) => {
         console.log("Member joined:", data);
-        fetchStudyRoomMembers(); // Refresh member list
+        // Add new member directly to state instead of just fetching
+        if (data.member) {
+          setStudyRoomMembers((prev) => {
+            const exists = prev.some((m) => m.user_id === data.member.user_id);
+            if (exists) {
+              // Update existing member to online
+              return prev.map((m) =>
+                m.user_id === data.member.user_id ? { ...m, online: true } : m
+              );
+            }
+            // Add new member
+            return [...prev, data.member];
+          });
+        } else {
+          // Fallback to fetching if member data not provided
+          fetchStudyRoomMembers();
+        }
       });
 
       // Listen for member left
       channel.listen("MemberLeft", (data) => {
         console.log("Member left:", data);
-        fetchStudyRoomMembers(); // Refresh member list
+        // Update member to offline instead of removing
+        if (data.user_id) {
+          setStudyRoomMembers((prev) =>
+            prev.map((m) =>
+              m.user_id === data.user_id ? { ...m, online: false } : m
+            )
+          );
+        } else {
+          // Fallback to fetching if user_id not provided
+          fetchStudyRoomMembers();
+        }
       });
 
       // Optional: Listen for user activity updates
@@ -152,7 +178,7 @@ const Community = () => {
       // Send heartbeat every 60 seconds to stay "online"
       const heartbeatTimer = setInterval(() => {
         sendHeartbeat();
-      }, 1000);
+      }, 60000);
 
       // Cleanup function
       return () => {
