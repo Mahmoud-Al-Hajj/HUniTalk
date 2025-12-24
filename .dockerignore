@@ -1,0 +1,24 @@
+# Docker
+.git
+.gitignore
+.gitattributes
+.env
+.env.example
+.env.local
+.env.*.local
+node_modules
+vendor
+tests
+phpunit.xml
+.phpunit.result.cache
+*.log
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+docker-compose*.yml
+README.md
+.editorconfig
+.vscode
+.idea
+docker/

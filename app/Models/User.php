@@ -1,16 +1,17 @@
 <?php
 
 namespace App\Models;
-
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
+use Illuminate\Auth\MustVerifyEmail; // trait
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject, MustVerifyEmailContract
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable, MustVerifyEmail; // use the trait here
+    use HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -21,13 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'major'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -45,4 +43,31 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+    public function savedPosts()
+    {
+        return $this->hasMany(SavedPost::class);
+    }
+    public function comments()
+    {
+        return $this->hasMany(PostComment::class);
+    }
+    public function communities()
+    {
+        return $this->belongsToMany(Community::class, 'communities_follows', 'user_id', 'community_id');
+    }
+
 }
